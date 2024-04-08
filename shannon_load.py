@@ -11,6 +11,7 @@ import idc
 import ida_auto
 import ida_bytes
 import ida_nalt
+import ida_name
 
 import struct
 
@@ -31,7 +32,7 @@ def load_file(fd, neflags, format):
     idaapi.set_processor_type("arm:ARMv7-A&R", ida_idp.SETPROC_LOADER_NON_FATAL)
 
     # make sure ida understands us correctly
-    idc.process_config_line("ARM_DEFAULT_ARCHITECTURE = metaarm")
+    idc.process_config_line("ARM_DEFAULT_ARCHITECTURE = ARMv7-A&R")
     idc.process_config_line("ARM_SIMPLIFY = NO")
     idc.process_config_line("ARM_NO_ARM_THUMB_SWITCH = YES")
 
@@ -72,10 +73,32 @@ def load_file(fd, neflags, format):
         # set entry points of main and bootloader
         if seg_name == "BOOT":
             idaapi.add_entry(seg_start, seg_end, "bootloader_entry", 1)
+            idc.set_cmt( seg_start, "bootloader entry point", 1)
             ida_auto.auto_make_code(seg_start)
 
         if seg_name == "MAIN":
             idaapi.add_entry(seg_start, seg_end, "reset_vector", 1)
+            
+            # b Reset_Handler
+            # b . /* 0x4  Undefined Instruction */
+            # b . /* 0x8  Software Interrupt */
+            # b . /* 0xC  Prefetch Abort */
+            # b . /* 0x10 Data Abort */
+            # b . /* 0x14 Reserved */
+            # b . /* 0x18 IRQ */
+            # b . /* 0x1C Reserved */
+
+            idc.set_cmt( seg_start, "vector table", 1)
+
+            ida_name.set_name( seg_start, "reset", 1) # points to bootloader
+            ida_name.set_name( seg_start+4, "undef_inst", 1)
+            ida_name.set_name( seg_start+8, "soft_int", 1)
+            ida_name.set_name( seg_start+12, "prefetch_abort", 1)
+            ida_name.set_name( seg_start+16, "data_abort", 1)
+            ida_name.set_name( seg_start+20, "reserved_1", 1)
+            ida_name.set_name( seg_start+24, "irq", 1)
+            ida_name.set_name( seg_start+28, "reserved_2", 1)
+
             ida_auto.auto_make_code(seg_start)
 
         start_offset += 0x20
