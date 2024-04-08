@@ -15,6 +15,14 @@ import ida_name
 
 import struct
 
+def add_data_segment(seg_start, seg_size, seg_name):
+
+    seg_end = seg_start + seg_size
+
+    idc.AddSeg(seg_start, seg_end, 0, 1, idaapi.saRel32Bytes, idaapi.scPub)
+    idc.set_segm_class(seg_start, "DATA")
+    idc.set_segm_name(seg_start, seg_name)
+
 def accept_file(fd, fname):
     fd.seek(0x0)
     try:
@@ -120,5 +128,43 @@ def load_file(fd, neflags, format):
 
     for s in strings:
         ida_bytes.create_strlit(s.ea, 0, ida_nalt.STRTYPE_TERMCHR)
+
+    # add additional memory ranges
+
+    add_data_segment(0x00000000, 0xFFFF, "ITCM")
+    add_data_segment(0x04800000, 0xFFFF, "unkown_boot")
+    add_data_segment(0x04000000, 0x20000, "bootrom")
+
+    add_data_segment(0x20000000, 0xFFFF, "DTCM")
+    #add_data_segment(0x40000000, 0xFFFF, "AHBP")
+    
+    add_data_segment(0x44200000, 0x1400000, "RAM")
+    add_data_segment(0x47F00000, 0x14000, "ABOX")
+
+    add_data_segment(0x80000000, 0x10000, "unknown_1")
+    add_data_segment(0x81000000, 0x2000, "unknown_2")
+    add_data_segment(0x81002000, 0x10000, "unknon_3")
+    add_data_segment(0x84000000, 0x10000, "UART")
+    add_data_segment(0x85000000, 0x10000, "unknown_4")
+    add_data_segment(0x8F900000, 0x1000, "unknown_5")
+    add_data_segment(0x8FC30000, 0x1000, "USI_1")
+    add_data_segment(0x8FC22000, 0x1000, "USI_2")
+    add_data_segment(0x8FC60000, 0x1000, "USI_3")
+    add_data_segment(0x8FD20000, 0x1000, "USI_4")
+
+    add_data_segment(0xC1000000, 0x10000, "TWOG_1")
+    add_data_segment(0xC1001000, 0x10000, "TWOG_2")
+    add_data_segment(0xC1800000, 0x10000, "MARCONI_1")
+    add_data_segment(0xC2000000, 0x10000, "MARCONI_2")
+    
+    # 0xE0000000-0xFFFFFFFF - system level use
+
+    # 0xE0000000-0xE00FFFFF - private peripheral bus (PPB)
+    add_data_segment(0xE0000000, 0x100000, "PPB")
+
+    # 0xE000E000 to 0xE000EFFF - system control space (SCS)
+    ida_name.set_name(0xE000E000, "system control space (SCS)", 1)
+
+    add_data_segment(0xEC000000, 0x10000, "GLINK")
 
     return 1
