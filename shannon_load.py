@@ -56,10 +56,13 @@ def load_file(fd, neflags, format):
     # improve auto analysis
     idc.process_config_line("ARM_REGTRACK_MAX_XREFS = 0")
 
+    #disable Coagulate and colapse
+    idc.process_config_line("ANALYSIS = 0x9bff9ff7ULL ")
+
     if (neflags & idaapi.NEF_RELOAD) != 0:
         return 1
     
-        # add additional memory ranges
+    # add additional memory ranges
 
     add_memory_segment(0x00000000, 0x000FFFFF, "ITCM_low")
     add_memory_segment(0x00100000, 0x0FEFFFFF, "EXTERNAL_1")
@@ -74,7 +77,8 @@ def load_file(fd, neflags, format):
 
     ida_name.set_name(0x32000000, "unknown_0")
 
-    add_memory_segment(0x40000000, 0x1EFFFFFF, "AHBP") # Pheriphials
+    # Normaly Pheriphials but this is used differently
+    add_memory_segment(0x40000000, 0x1EFFFFFF, "AHBP")  
 
     ida_name.set_name(0x44200000, "RAM")
     ida_name.set_name(0x47F00000, "ABOX")
@@ -103,8 +107,13 @@ def load_file(fd, neflags, format):
     add_memory_segment(0xA0000000, 0x3fffffff, "EXT_DEVICE")
 
     # 0xE0000000-0xFFFFFFFF - system level use
+    add_memory_segment(0xE0000000, 0x1FFFFFFF, "SYSTEM")
+
+    0xE06FA2CA
 
     # 0xE0000000-0xE00FFFFF - private peripheral bus (PPB)
+    add_memory_segment(0xE0000000, 0x000FFFFF, "PPB")
+
     add_memory_segment(0xE0001000, 0x00000FFF, "PPB_DW")
     add_memory_segment(0xE0002000, 0x00000FFF, "PPB_BP")
     add_memory_segment(0xE000E000, 0x00000CFF, "PPB_NVIC")
@@ -117,6 +126,11 @@ def load_file(fd, neflags, format):
 
     # system level
     add_memory_segment(0xEC000000, 0x0000FFFF, "GLINK")
+
+    add_memory_segment(0xF0000000, 0x0FFFFFFF, "unknown_8")
+
+    #0xEACEBE8E, 0xEB86660C, 0xFF0F5D1C
+    #0x5F8A5309
 
     start_offset = 0x20
 
@@ -181,7 +195,7 @@ def load_file(fd, neflags, format):
 
             ida_name.set_name(seg_start+28, "reserved_2", 1)
 
-            # ida_auto.auto_make_code(seg_start)
+            ida_auto.auto_make_code(seg_start)
 
         start_offset += 0x20
 
