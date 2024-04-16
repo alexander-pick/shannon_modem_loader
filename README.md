@@ -6,13 +6,17 @@ This loader is designed to be lean and easy to understand. It should work with m
 
 # How To Use
 
-The TOC header is a simple structure the loader will read to create a database of the file with proper aligned segments and entry points. For more insights just look at the code of this loader. To use the loader simply install it inside your IDA Pro's loader folder:
+The TOC header is a simple structure the loader will read to create a database of the file with proper aligned segments and entry points. For more insights just look at the code of this loader. 
 
+To use the loader simply install it inside your IDA Pro's loader folder and the post processor into the python folder like this:
+
+Example:
 ```
-cp shannon_load.py ~/idapro-8.4/loaders/
+cp -v shannon_load.py ~/idapro-8.4/loaders/
+cp -v shannon_postprocess.py ~/idapro-8.4/loaders/
 ```
 
-Once installed open a `modem.bin` in IDA Pro, the loader should detect the TOC format and load the image accordingly.
+Once installed open a `modem.bin` in IDA Pro, the loader should detect the TOC format and load the image accordingly. The postprocessor script will add additional segment information after the initial analysis has finished. Adding the segments right from the start will confuse and slow down the analysis process.
 
 ## IDA Compatibility And Installation
 

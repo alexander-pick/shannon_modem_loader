@@ -13,5 +13,6 @@ if [ -z ${IDADIR} ]; then
 
 fi
 
-cp shannon_load.py ${IDADIR}/loaders/
+cp -v shannon_load.py ${IDADIR}/loaders/
+cp -v shannon_postprocess.py ${IDADIR}/python/
 ${IDADIR}/ida

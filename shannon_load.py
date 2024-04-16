@@ -12,23 +12,9 @@ import ida_auto
 import ida_bytes
 import ida_nalt
 import ida_name
-import ida_segment
+import ida_expr
 
 import struct
-
-
-def add_memory_segment(seg_start, seg_size, seg_name):
-
-    seg_end = seg_start + seg_size
-
-    idc.add_segm_ex(seg_start, seg_end, 0, 1, idaapi.saRel32Bytes, idaapi.scPub, ida_segment.ADDSEG_SPARSE)
-
-    idc.set_segm_class(seg_start, "DATA")
-    idc.set_segm_type(seg_start, idaapi.SEG_DATA)
-    idc.set_segm_name(seg_start, seg_name)
-    
-    #make sure it is really STT_MM (sparse) 
-    ida_bytes.change_storage_type(seg_start, seg_end, 1)
 
 def accept_file(fd, fname):
     fd.seek(0x0)
@@ -51,86 +37,19 @@ def load_file(fd, neflags, format):
     # make sure ida understands us correctly
     idc.process_config_line("ARM_DEFAULT_ARCHITECTURE = ARMv7-A&R")
     idc.process_config_line("ARM_SIMPLIFY = NO")
-    idc.process_config_line("ARM_NO_ARM_THUMB_SWITCH = YES")
+    idc.process_config_line("ARM_NO_ARM_THUMB_SWITCH = NO")
 
     # improve auto analysis
     idc.process_config_line("ARM_REGTRACK_MAX_XREFS = 0")
 
-    #disable Coagulate and colapse
+    # disable Coagulate and colapse
     idc.process_config_line("ANALYSIS = 0x9bff9ff7ULL ")
 
     if (neflags & idaapi.NEF_RELOAD) != 0:
         return 1
-    
-    # add additional memory ranges
 
-    add_memory_segment(0x00000000, 0x000FFFFF, "ITCM_low")
-    add_memory_segment(0x00100000, 0x0FEFFFFF, "EXTERNAL_1")
-    # add_data_segment(0x04800000, 0x0000FFFF, "unkown_boot")
-    # add_data_segment(0x04000000, 0x0001FFFF, "bootrom")
-
-    add_memory_segment(0x10000000, 0x0000FFFF, "ITCM_high")
-    add_memory_segment(0x10010000, 0x0FFEFFFF, "EXTERNAL_2")
-
-    add_memory_segment(0x20000000, 0x000FFFFF, "SRAM_DTCM")
-    add_memory_segment(0x20100000, 0x1FEFFFFF, "SRAM_EXTERN") # normally 0x1FEFFFFF, but shortened as only a fraction is used
-
-    ida_name.set_name(0x32000000, "unknown_0")
-
-    # Normaly Pheriphials but this is used differently
-    add_memory_segment(0x40000000, 0x1EFFFFFF, "AHBP")  
-
-    ida_name.set_name(0x44200000, "RAM")
-    ida_name.set_name(0x47F00000, "ABOX")
-
-    add_memory_segment(0x60000000, 0x3fffffff, "SRAM_EXTERN")
-
-    ida_name.set_name(0x80000000, "unknown_1")
-    ida_name.set_name(0x81000000, "unknown_2")
-    ida_name.set_name(0x81002000, "unknown_3")
-    ida_name.set_name(0x84000000, "UART")
-    ida_name.set_name(0x85000000, "unknown_4")
-    ida_name.set_name(0x8F900000, "unknown_5")
-    ida_name.set_name(0x8FC30000, "USI_1")
-    ida_name.set_name(0x8FC22000, "USI_2")
-    ida_name.set_name(0x8FC60000, "USI_3")
-    ida_name.set_name(0x8FD20000, "USI_4")
-
-    ida_name.set_name(0xD0800000, "unknown_6")
-
-    ida_name.set_name(0xC1000000, "TWOG_1")
-    ida_name.set_name(0xC1001000, "TWOG_2")
-    ida_name.set_name(0xC1800000, "MARCONI_1")
-    ida_name.set_name(0xC2000000, "MARCONI_2")
-    ida_name.set_name(0xCE000000, "unknown_7")
-
-    add_memory_segment(0xA0000000, 0x3fffffff, "EXT_DEVICE")
-
-    # 0xE0000000-0xFFFFFFFF - system level use
-    add_memory_segment(0xE0000000, 0x1FFFFFFF, "SYSTEM")
-
-    0xE06FA2CA
-
-    # 0xE0000000-0xE00FFFFF - private peripheral bus (PPB)
-    add_memory_segment(0xE0000000, 0x000FFFFF, "PPB")
-
-    add_memory_segment(0xE0001000, 0x00000FFF, "PPB_DW")
-    add_memory_segment(0xE0002000, 0x00000FFF, "PPB_BP")
-    add_memory_segment(0xE000E000, 0x00000CFF, "PPB_NVIC")
-    add_memory_segment(0xE000ED00, 0x000002FF, "PPB_DBGCTL")
-    add_memory_segment(0xE0005000, 0x00000FFF, "PPB")
-    add_memory_segment(0xE00FF000, 0x00000FFF, "ROM_TABLE")
-
-    # 0xE000E000 to 0xE000EFFF - system control space (SCS)
-    ida_name.set_name(0xE000E000, "system control space (SCS)", 1)
-
-    # system level
-    add_memory_segment(0xEC000000, 0x0000FFFF, "GLINK")
-
-    add_memory_segment(0xF0000000, 0x0FFFFFFF, "unknown_8")
-
-    #0xEACEBE8E, 0xEB86660C, 0xFF0F5D1C
-    #0x5F8A5309
+    idc.msg("\nIDA Pro Shannon Modem Loader\n")
+    idc.msg("https://github.com/alexander-pick/shannon_modem_loader\n\n")
 
     start_offset = 0x20
 
@@ -156,7 +75,7 @@ def load_file(fd, neflags, format):
             idc.set_segm_class(seg_start, "DATA")
         else:
             idc.set_segm_class(seg_start, "CODE")
-        idc.set_segm_name(seg_start, seg_name)
+        idc.set_segm_name(seg_start, seg_name+"_file")
 
         fd.file2base(toc_info[1], seg_start, seg_end,  0)
 
@@ -211,5 +130,15 @@ def load_file(fd, neflags, format):
 
     for s in strings:
         ida_bytes.create_strlit(s.ea, 0, ida_nalt.STRTYPE_TERMCHR)
+
+    # These 3 lines were awarded the most ugliest hack award 2024, runs a script which scheudles a callback without 
+    # beeing unloaded with the loader.
+
+    rv = ida_expr.idc_value_t()
+    idc_line = 'RunPythonStatement("exec(open(\''+ idaapi.idadir("python") +'/shannon_postprocess.py\').read())")'
+    #idc.msg(idc_line)
+    ida_expr.eval_idc_expr(rv, idaapi.BADADDR, idc_line)
+
+    idc.msg("[i] loader done\n")
 
     return 1
