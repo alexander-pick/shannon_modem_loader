@@ -11,11 +11,104 @@ import ida_bytes
 import ida_name
 import ida_idp
 import ida_segment
+import idautils
+import ida_ua
+import ida_funcs
+import ida_struct
+import ida_nalt
 
 class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
     def __init__(self):
         ida_idp.IDB_Hooks.__init__(self)
+
+    # this creates cmts from previously created dbt structures to anote 
+    # functions with their source paths and string refs
+    def make_dbt_refs(self):
+
+        struct_id = ida_struct.get_struc_id("dbt_struct")
+        all_structs = idautils.XrefsTo(struct_id, 0)
+
+        for i in all_structs:
+
+            sptr = ida_struct.get_struc(struct_id)
+                
+            str_ptr = ida_struct.get_member_by_name(sptr, "msg_ptr")
+            str_offset = int.from_bytes(ida_bytes.get_bytes(i.frm+str_ptr.soff, 4), "little")
+            # creating is mostly not needed but we do it to make sure it is defined
+            ida_bytes.create_strlit(str_offset, 0, ida_nalt.STRTYPE_C)
+            msg_str = idc.get_strlit_contents(str_offset)
+            #print("%x: %s" % (str_offset, msg_str))
+
+            file = ida_struct.get_member_by_name(sptr, "file")
+            file_offset = int.from_bytes(ida_bytes.get_bytes(i.frm+file.soff, 4), "little")
+            ida_bytes.create_strlit(file_offset, 0, ida_nalt.STRTYPE_C)
+            file_str = idc.get_strlit_contents(file_offset)
+            #print("%x: %s" % (file_offset, file_str))
+
+            #find xref to struct
+            for xref_dbt in idautils.XrefsTo(i.frm,  0):
+                if(msg_str != None):
+                    idaapi.set_cmt(xref_dbt.frm, msg_str.decode(), 1)
+
+                    func_start = idc.get_func_attr(xref_dbt.frm, idc.FUNCATTR_START)
+
+                    if(func_start !=  idaapi.BADADDR):
+                        if(file_str != None):
+                            idaapi.set_func_cmt(func_start, file_str.decode(), 1)
+
+    # restores the function names of SS related functions from a macro created function structure
+    def restore_ss_names(self):
+
+        sc = idautils.Strings()
+
+        for i in sc:
+            if(str(i) == "ss_DecodeGmmSsReleaseIndMsg"):
+                # find xref to function name, essentially should be just one xref
+                for xref in idautils.XrefsTo(i.ea, 0):  
+                    for xref_str in idautils.CodeRefsFrom(idc.next_head(xref.frm),  0):
+                        for xref_func in idautils.XrefsTo(xref_str,  0):
+                            cur_offset = idc.prev_head(xref_func.frm)
+
+                            while 1:
+                                str_addr = idc.get_operand_value(cur_offset, 1)
+                                #print(hex(str_addr))
+                                func_name = idc.get_strlit_contents(str_addr)
+
+                                if(func_name != None):
+                                    # get what we see 
+                                    opcode = ida_ua.ua_mnem(cur_offset)
+                                    if(opcode == "NOP"):
+                                        # if we hit the NOP, go forward again to realign
+                                        cur_offset = idc.next_head(cur_offset)
+                                    break
+                                else:
+                                    cur_offset = idc.prev_head(cur_offset)
+
+                            #print(func_name.decode())
+
+                            func_start = idc.get_func_attr(xref_func.frm, idc.FUNCATTR_START)
+                            #print(hex(func_start))
+
+                            if(func_start !=  idaapi.BADADDR):
+                                idaapi.set_name(func_start, func_name.decode())
+                            else:
+                                #print("not a function, searching for start")
+                                cur_offset = xref_func.frm
+                                prev_offset = 0
+                                # find func boundaries
+                                while 1:
+                                    flags = idc.get_func_flags(cur_offset)
+                                    opcode = ida_ua.ua_mnem(cur_offset)
+
+                                    if(flags == -1 and opcode != None):
+                                        prev_offset = cur_offset
+                                        cur_offset = idc.prev_head(cur_offset)
+                                    else:
+                                        #print("FUNC_START ", hex(prev_offset))
+                                        ida_funcs.add_func(prev_offset,idc.prev_head(str_addr))
+                                        idaapi.set_name(prev_offset, func_name.decode())
+                                        break
 
     def add_memory_segment(self, seg_start, seg_size, seg_name):
 
@@ -32,6 +125,9 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         ida_bytes.change_storage_type(seg_start, seg_end, 1)
 
     def auto_empty_finally(self):
+
+        self.restore_ss_names()
+        self.make_dbt_refs()
 
         # add additional memory ranges
 

@@ -13,8 +13,62 @@ import ida_bytes
 import ida_nalt
 import ida_name
 import ida_expr
+import ida_ua
+import ida_funcs
+import ida_struct
 
 import struct
+
+def create_dbt_struct():
+
+    # struct for basic DBT entries
+    struct_id = idc.add_struc(0, "dbt_base", 0)
+    idc.add_struc_member(struct_id, "head", -1, idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "id", -1, idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "type", -1, idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "unknown_1", -1, idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "unknown_2", -1, idaapi.FF_DWORD, -1, 4)
+    idc.add_struc_member(struct_id, "unknown_3", -1, idaapi.FF_DWORD, -1, 4) 
+
+    # DBT entries with file and string ref
+    struct_id = idc.add_struc(0, "dbt_struct", 0)
+    idc.add_struc_member(struct_id, "head", -1, idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "id", -1, idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "type", -1, idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "num_param", -1, idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "msg_ptr", -1, idaapi.FF_DWORD, -1, 4)
+    idc.add_struc_member(struct_id, "line", -1, idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "file", -1, idaapi.FF_DWORD, -1, 4) 
+
+# This function will create DBT structs, DBT structs are debug references of various kind.
+# The head contains a type byte in position 4, this indicates if a structure is a string
+# ref and therefore also has a file ref or not.
+
+def make_dbt():
+    sc = idautils.Strings()
+
+    sc.setup(strtypes=[ida_nalt.STRTYPE_C],
+                  ignore_instructions=True, minlen=4)
+
+    sc.refresh()
+
+    for i in sc:
+        if("DBT:" in str(i)):
+            
+            # read DBT type
+            header_type = int.from_bytes(ida_bytes.get_bytes(i.ea+3, 1), "little")
+
+            struct_name = "dbt_struct"
+            if(header_type != 0x3a):
+                struct_name = "dbt_base"
+
+            #print(i.ea)
+            struct_id = ida_struct.get_struc_id(struct_name)
+            struct_size = ida_struct.get_struc_size(struct_id)
+            #print(struct_size)
+
+            ida_bytes.del_items(i.ea, 0,  struct_size)
+            ida_bytes.create_struct(i.ea, struct_size, struct_id) 
 
 def accept_file(fd, fname):
     fd.seek(0x0)
@@ -118,18 +172,21 @@ def load_file(fd, neflags, format):
 
         start_offset += 0x20
 
+    create_dbt_struct()
+    make_dbt()
+
     # pre-create long strings to avoid them beeing mistaken with code
     # Shannon has a lot of these and IDA ocassinly eats them
 
-    strings = idautils.Strings()
+    # strings = idautils.Strings()
 
-    strings.setup(strtypes=[ida_nalt.STRTYPE_C],
-                  ignore_instructions=True, minlen=12)
+    # strings.setup(strtypes=[ida_nalt.STRTYPE_C],
+    #               ignore_instructions=True, minlen=12)
 
-    strings.refresh()
+    # strings.refresh()
 
-    for s in strings:
-        ida_bytes.create_strlit(s.ea, 0, ida_nalt.STRTYPE_TERMCHR)
+    # for s in strings:
+    #     ida_bytes.create_strlit(s.ea, 0, ida_nalt.STRTYPE_TERMCHR)
 
     # These 3 lines were awarded the most ugliest hack award 2024, runs a script which scheudles a callback without 
     # beeing unloaded with the loader.
