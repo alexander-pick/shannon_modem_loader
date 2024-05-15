@@ -19,6 +19,7 @@ import ida_struct
 
 import struct
 
+# this function creates debug trace structures in the database
 def create_dbt_struct():
 
     # struct for basic DBT entries
@@ -175,25 +176,11 @@ def load_file(fd, neflags, format):
     create_dbt_struct()
     make_dbt()
 
-    # pre-create long strings to avoid them beeing mistaken with code
-    # Shannon has a lot of these and IDA ocassinly eats them
-
-    # strings = idautils.Strings()
-
-    # strings.setup(strtypes=[ida_nalt.STRTYPE_C],
-    #               ignore_instructions=True, minlen=12)
-
-    # strings.refresh()
-
-    # for s in strings:
-    #     ida_bytes.create_strlit(s.ea, 0, ida_nalt.STRTYPE_TERMCHR)
-
     # These 3 lines were awarded the most ugliest hack award 2024, runs a script which scheudles a callback without 
     # beeing unloaded with the loader.
 
     rv = ida_expr.idc_value_t()
     idc_line = 'RunPythonStatement("exec(open(\''+ idaapi.idadir("python") +'/shannon_postprocess.py\').read())")'
-    #idc.msg(idc_line)
     ida_expr.eval_idc_expr(rv, idaapi.BADADDR, idc_line)
 
     idc.msg("[i] loader done\n")
