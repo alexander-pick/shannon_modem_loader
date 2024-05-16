@@ -17,6 +17,8 @@ import ida_funcs
 import ida_struct
 import ida_nalt
 
+import re
+
 class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
     def __init__(self):
@@ -90,8 +92,32 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
             if(postfix > 0):
                 name = orig_name + "_" + str(postfix)
             postfix += 1
-
+            # sanity check
+            if(postfix > 42):
+                break
         return name
+    
+    def create_name(self, ea, name):
+        for xref in idautils.XrefsTo(ea, 0):
+            func_start = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
+                
+            if(func_start !=  idaapi.BADADDR):
+                if(len(name) > 8):
+                    idaapi.set_name(func_start, self.function_find_name(name))
+                else:
+                    print("[e] %x: function name too short: %s" % (func_start, name)) 
+    
+    def restore_cpp_names(self):
+
+        sc = idautils.Strings()
+
+        for i in sc:
+            # step 1 - find a function name
+            regex = "([a-z]*::[A-Za-z_]*::[A-Za-z_]*)"
+
+            if(re.match(regex, str(i))):
+                self.create_name(i.ea, str(i))
+
 
     # restores the function names of SS related functions from a macro created function structure
     def restore_ss_names(self):
@@ -173,7 +199,7 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
                             func_name_str = func_name.decode()
 
-                            print("[i] %x: found function name %s" % (str_addr, func_name_str))
+                            #print("[d] %x: found function name %s" % (str_addr, func_name_str))
                             
                             if("ss_" not in func_name_str):
                                 print("[e] %x: failed to find function name for %x, found '%s' instead" % (str_addr, xref_func.frm, func_name))
@@ -209,6 +235,20 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
                                         ida_funcs.add_func(prev_offset,idc.prev_head(str_addr))
                                         idaapi.set_name(prev_offset, self.function_find_name(func_name_str))
 
+    # creates strings which are at least 12 bytes long
+    def create_long_strings(self):
+        strings = idautils.Strings()
+
+        strings.setup(strtypes=[ida_nalt.STRTYPE_C],
+                    ignore_instructions=True, minlen=12)
+        
+        strings.refresh()
+        
+        for s in strings:
+            #sanity check, is unknown bytes?
+            if(idc.is_unknown(idc.get_full_flags(s.ea))):
+                ida_bytes.create_strlit(s.ea, 0, ida_nalt.STRTYPE_TERMCHR)
+
     def add_memory_segment(self, seg_start, seg_size, seg_name):
 
         seg_end = seg_start + seg_size
@@ -226,6 +266,8 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
     def auto_empty_finally(self):
 
         self.restore_ss_names()
+        self.restore_cpp_names()
+        self.create_long_strings()
         self.make_dbt_refs()
 
         # add additional memory ranges
@@ -298,6 +340,11 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
         # 0xEACEBE8E, 0xEB86660C, 0xFF0F5D1C
         # 0x5F8A5309
+
+        # reschedule everything for a last auto analysis pass
+        for s in idautils.Segments():
+            idc.plan_and_wait(idc.get_segm_start(s),idc.get_segm_end(s))
+
         return
 
 idb_hooks = idb_finalize_hooks_t()
