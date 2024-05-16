@@ -7,7 +7,7 @@ import ida_bytes
 import idautils
 import ida_struct
 
-struct_id = ida_struct.get_struc_id("dbt_struct")
+struct_id = ida_struct.get_struc_id("dbt")
 all_structs = idautils.XrefsTo(struct_id, 0)
 
 for i in all_structs:

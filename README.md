@@ -18,6 +18,8 @@ cp -v shannon_postprocess.py ~/idapro-8.4/loaders/
 
 Once installed open a `modem.bin` in IDA Pro, the loader should detect the TOC format and load the image accordingly. The postprocessor script will add additional segment information after the initial analysis has finished. Adding the segments right from the start will confuse and slow down the analysis process.
 
+The postprocessing module does most of the magic and it will take a bit to run, please be patient.
+
 ## IDA Compatibility And Installation
 
 Tested with IDA Pro 8.3 and 8.4.
