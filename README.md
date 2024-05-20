@@ -8,7 +8,7 @@ Shannon is an IC series by Samsung LSI. Most noteable product in the series is t
 
 Nowadays the baseband IC is most of the time integrated into the Exynos SOC directly. For special configs, standalone baseband ICs are still sold.
 
-Historically the Shannon was at least developed since 2005 under the name of CMC. The CMC220 was the first LTE version of the IC which launched in 2011, shortly after the first Exynos processor. Samsung is still celebrating it in some of their shareholder presentations.
+Historically the Shannon baseband was at least developed since 2005. During the early days it went under the name of CMC. The CMC220 was the first LTE version of the IC which launched in 2011, shortly after the first Exynos processor. Samsung is still celebrating it in some of their shareholder presentations.
 
 # How To Use
 
