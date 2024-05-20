@@ -2,7 +2,7 @@
 
 if [ -z ${IDADIR} ]; then 
 
-    if [ ${1} == "" ]; then
+    if [ -z ${1} ]; then
 
         if [ -d "${HOME}/idapro-8.4" ]; then
             IDADIR="${HOME}/idapro-8.4"

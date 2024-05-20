@@ -22,28 +22,19 @@ import struct
 # this function creates debug trace structures in the database
 def create_dbt_struct():
 
-    # struct for basic DBT entries
-    struct_id = idc.add_struc(0, "dbt", 0)
-    idc.add_struc_member(struct_id, "head", -1, idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "id", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "type", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "unknown_1", -1, idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "unknown_2", -1, idaapi.FF_DWORD, -1, 4)
-    idc.add_struc_member(struct_id, "unknown_3", -1, idaapi.FF_DATA|idaapi.FF_DWORD|idaapi.FF_0OFF, -1, 4) 
-
     # DBT entries with file and string ref
-    struct_id = idc.add_struc(0, "dbt_trace", 0)
+    struct_id = idc.add_struc(0, "dbg_trace", 0)
     idc.add_struc_member(struct_id, "head", -1, idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "id", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "type", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "num_param", -1, idaapi.FF_DATA|idaapi.FF_DWORD|idaapi.FF_0ENUM, -1, 4) 
+    idc.add_struc_member(struct_id, "group", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "channel", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
+    idc.add_struc_member(struct_id, "num_param", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
     idc.add_struc_member(struct_id, "msg_ptr", -1, idaapi.FF_DATA|idaapi.FF_DWORD|idaapi.FF_0OFF, -1, 4)
-    idc.add_struc_member(struct_id, "line", -1, idaapi.FF_DATA|idaapi.FF_DWORD|idaapi.FF_0ENUM, -1, 4) 
+    idc.add_struc_member(struct_id, "line", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
     idc.add_struc_member(struct_id, "file", -1, idaapi.FF_DWORD, -1, 4) 
 
 # This function will create DBT structs, DBT structs are debug references of various kind.
-# The head contains a type byte in position 4, this indicates if a structure is a string
-# ref and therefore also has a file ref or not.
+# The head contains a type byte in position 4, this indicates if a structure is a direct 
+# string ref or something else.
 
 def make_dbt():
     sc = idautils.Strings()
@@ -56,20 +47,23 @@ def make_dbt():
     for i in sc:
         if("DBT:" in str(i)):
             
-            # read DBT type
-            header_type = int.from_bytes(ida_bytes.get_bytes(i.ea+3, 1), "little")
+            struct_name = "dbg_trace"
 
-            struct_name = "dbt_trace"
-            if(header_type != 0x3a):
-                struct_name = "dbt"
+            # read DBT type
+            #header_type = int.from_bytes(ida_bytes.get_bytes(i.ea+3, 1), "little")           
+            # if(header_type != 0x3a):
+            #     struct_name = "dbt"
 
             #print(i.ea)
             struct_id = ida_struct.get_struc_id(struct_name)
             struct_size = ida_struct.get_struc_size(struct_id)
             #print(struct_size)
 
-            ida_bytes.del_items(i.ea, 0,  struct_size)
-            ida_bytes.create_struct(i.ea, struct_size, struct_id) 
+            # make sure we start on-point
+            offset = i.ea +  str(i).find("DBT:")
+
+            ida_bytes.del_items(offset, 0,  struct_size)
+            ida_bytes.create_struct(offset, struct_size, struct_id) 
 
 def accept_file(fd, fname):
     fd.seek(0x0)
