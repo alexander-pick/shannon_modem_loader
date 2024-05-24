@@ -6,16 +6,17 @@
 
 import idc
 import idaapi
+import idautils
 import ida_idp
 import ida_bytes
 import ida_name
 import ida_idp
 import ida_segment
-import idautils
 import ida_ua
 import ida_funcs
 import ida_struct
 import ida_nalt
+import ida_name
 
 import re
 
@@ -95,7 +96,8 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
             # sanity check
             if(postfix > 42):
                 break
-        return name
+        #filter some bad chars before returning the string
+        return name.translate(dict.fromkeys(map(ord, u",~")))
     
     def create_name(self, ea, name):
         for xref in idautils.XrefsTo(ea, 0):
@@ -103,7 +105,7 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
                 
             if(func_start !=  idaapi.BADADDR):
                 if(len(name) > 8):
-                    idaapi.set_name(func_start, self.function_find_name(name))
+                    ida_name.set_name(func_start, self.function_find_name(name), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
                 else:
                     print("[e] %x: function name too short: %s" % (func_start, name)) 
     
@@ -235,6 +237,21 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
                                         ida_funcs.add_func(prev_offset,idc.prev_head(str_addr))
                                         idaapi.set_name(prev_offset, self.function_find_name(func_name_str))
 
+    #helper function to set a name on the target of a LDR or B
+    def get_ref_set_name(self, cur_ea, name):
+
+        opcode = ida_ua.ua_mnem(cur_ea)
+        print("%x: %s -> %s" % (cur_ea, opcode, name))
+        if(opcode == "LDR"):
+            target_ref = idc.get_operand_value(cur_ea, 1)
+            target = int.from_bytes(ida_bytes.get_bytes(target_ref, 4), "little")
+            print(target)
+            ida_name.set_name(target, name, ida_name.SN_NOCHECK)
+        if(opcode == "B"):
+            target = idc.get_operand_value(cur_ea, 0)
+            print(target)
+            ida_name.set_name(target, name, ida_name.SN_NOCHECK)
+
     # creates strings which are at least 12 bytes long
     def create_long_strings(self):
         strings = idautils.Strings()
@@ -270,6 +287,27 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         self.create_long_strings()
         self.make_dbt_refs()
 
+        for s in idautils.Segments():
+            
+            seg_start= idc.get_segm_start(s)
+            seg_name = idc.get_segm_name(seg_start)
+
+            print("%x: %s" % (seg_start, seg_name))
+            
+            # add some names
+            if(seg_name == "BOOT_file"):
+
+                self.get_ref_set_name(seg_start, "start")
+
+            if(seg_name == "MAIN_file"):
+                
+                self.get_ref_set_name(seg_start, "reset_v")
+                self.get_ref_set_name(seg_start+4, "undef_inst_v")
+                self.get_ref_set_name(seg_start+8, "soft_int_v")
+                self.get_ref_set_name(seg_start+12, "prefetch_abort_v")
+                self.get_ref_set_name(seg_start+16, "data_abort_v")
+                self.get_ref_set_name(seg_start+24, "irq_v")
+
         # add additional memory ranges
 
         self.add_memory_segment(0x00000000, 0x000FFFFF, "ITCM_low")
@@ -284,34 +322,34 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         # normally 0x1FEFFFFF, but shortened as only a fraction is used
         self.add_memory_segment(0x20100000, 0x1FEFFFFF, "SRAM_EXTERN")
 
-        ida_name.set_name(0x32000000, "unknown_0")
+        ida_name.set_name(0x32000000, "unknown_0", ida_name.SN_NOCHECK)
 
         # Normaly Pheriphials but this is used differently
         self.add_memory_segment(0x40000000, 0x1EFFFFFF, "AHBP")
 
-        ida_name.set_name(0x44200000, "RAM")
-        ida_name.set_name(0x47F00000, "ABOX")
+        ida_name.set_name(0x44200000, "RAM", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x47F00000, "ABOX", ida_name.SN_NOCHECK)
 
         self.add_memory_segment(0x60000000, 0x3fffffff, "SRAM_EXTERN")
 
-        ida_name.set_name(0x80000000, "unknown_1")
-        ida_name.set_name(0x81000000, "unknown_2")
-        ida_name.set_name(0x81002000, "unknown_3")
-        ida_name.set_name(0x84000000, "UART")
-        ida_name.set_name(0x85000000, "unknown_4")
-        ida_name.set_name(0x8F900000, "unknown_5")
-        ida_name.set_name(0x8FC30000, "USI_1")
-        ida_name.set_name(0x8FC22000, "USI_2")
-        ida_name.set_name(0x8FC60000, "USI_3")
-        ida_name.set_name(0x8FD20000, "USI_4")
+        ida_name.set_name(0x80000000, "unknown_1", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x81000000, "unknown_2", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x81002000, "unknown_3", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x84000000, "UART", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x85000000, "unknown_4", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x8F900000, "unknown_5", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x8FC30000, "USI_1", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x8FC22000, "USI_2", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x8FC60000, "USI_3", ida_name.SN_NOCHECK)
+        ida_name.set_name(0x8FD20000, "USI_4", ida_name.SN_NOCHECK)
 
-        ida_name.set_name(0xD0800000, "unknown_6")
+        ida_name.set_name(0xD0800000, "unknown_6", ida_name.SN_NOCHECK)
 
-        ida_name.set_name(0xC1000000, "TWOG_1")
-        ida_name.set_name(0xC1001000, "TWOG_2")
-        ida_name.set_name(0xC1800000, "MARCONI_1")
-        ida_name.set_name(0xC2000000, "MARCONI_2")
-        ida_name.set_name(0xCE000000, "unknown_7")
+        ida_name.set_name(0xC1000000, "TWOG_1", ida_name.SN_NOCHECK)
+        ida_name.set_name(0xC1001000, "TWOG_2", ida_name.SN_NOCHECK)
+        ida_name.set_name(0xC1800000, "MARCONI_1", ida_name.SN_NOCHECK)
+        ida_name.set_name(0xC2000000, "MARCONI_2", ida_name.SN_NOCHECK)
+        ida_name.set_name(0xCE000000, "unknown_7", ida_name.SN_NOCHECK)
 
         self.add_memory_segment(0xA0000000, 0x3fffffff, "EXT_DEVICE")
 
@@ -331,18 +369,16 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         self.add_memory_segment(0xE00FF000, 0x00000FFF, "ROM_TABLE")
 
         # 0xE000E000 to 0xE000EFFF - system control space (SCS)
-        ida_name.set_name(0xE000E000, "system control space (SCS)", 1)
+        ida_name.set_name(0xE000E000, "system control space (SCS)", ida_name.SN_NOCHECK)
 
         # system level
         self.add_memory_segment(0xEC000000, 0x0000FFFF, "GLINK")
 
         self.add_memory_segment(0xF0000000, 0x0FFFFFFF, "unknown_8")
 
-        # 0xEACEBE8E, 0xEB86660C, 0xFF0F5D1C
-        # 0x5F8A5309
-
-        # reschedule everything for a last auto analysis pass
         for s in idautils.Segments():
+
+            # reschedule everything for a last auto analysis pass
             idc.plan_and_wait(idc.get_segm_start(s),idc.get_segm_end(s))
 
         return

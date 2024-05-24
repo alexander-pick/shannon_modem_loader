@@ -65,18 +65,20 @@ def make_dbt():
             ida_bytes.del_items(offset, 0,  struct_size)
             ida_bytes.create_struct(offset, struct_size, struct_id) 
 
+# validate if the file can be processed by the loader
 def accept_file(fd, fname):
+    
     fd.seek(0x0)
+
     try:
         image_type = fd.read(0x3)
     except UnicodeDecodeError:
         return 0
 
-    if image_type == b"TOC":
+    if(image_type == b"TOC"):
         return {"format": "Shannon Baseband Image", "processor": "arm"}
 
     return 0
-
 
 def load_file(fd, neflags, format):
 
@@ -94,7 +96,7 @@ def load_file(fd, neflags, format):
     # disable Coagulate and colapse
     idc.process_config_line("ANALYSIS = 0x9bff9ff7ULL ")
 
-    if (neflags & idaapi.NEF_RELOAD) != 0:
+    if(neflags & idaapi.NEF_RELOAD != 0):
         return 1
 
     idc.msg("\nIDA Pro Shannon Modem Loader\n")
@@ -120,30 +122,35 @@ def load_file(fd, neflags, format):
 
         # map slices to segments
         idc.AddSeg(seg_start, seg_end, 0, 1, idaapi.saRel32Bytes, idaapi.scPub)
-        if "NV" in seg_name:
+
+        if("NV" in seg_name):
             idc.set_segm_class(seg_start, "DATA")
         else:
             idc.set_segm_class(seg_start, "CODE")
+            
         idc.set_segm_name(seg_start, seg_name+"_file")
 
         fd.file2base(toc_info[1], seg_start, seg_end,  0)
 
         # set entry points of main and bootloader
-        if seg_name == "BOOT":
+        if(seg_name == "BOOT"):
             idaapi.add_entry(seg_start, seg_start, "bootloader_entry", 1)
             idc.set_cmt(seg_start, "bootloader entry point", 1)
             ida_auto.auto_make_code(seg_start)
 
-        if seg_name == "MAIN":
+        # process main segment and create vector table
+        if(seg_name == "MAIN"):
 
-            # b Reset_Handler
-            # b . /* 0x4  Undefined Instruction */
-            # b . /* 0x8  Software Interrupt */
-            # b . /* 0xC  Prefetch Abort */
-            # b . /* 0x10 Data Abort */
-            # b . /* 0x14 Reserved */
-            # b . /* 0x18 IRQ */
-            # b . /* 0x1C Reserved */
+            # 0x0  Reset
+            # 0x4  Undefined Instruction
+            # 0x8  Software Interrupt
+            # 0xC  Prefetch Abort
+            # 0x10 Data Abort
+            # 0x14 Reserved
+            # 0x18 IRQ
+            # 0x1C Reserved
+
+            ida_auto.auto_make_code(seg_start)
 
             idc.set_cmt(seg_start, "vector table", 1)
 
@@ -157,13 +164,11 @@ def load_file(fd, neflags, format):
 
             idaapi.add_entry(seg_start+16, seg_start+16, "data_abort", 1)
 
-            ida_name.set_name(seg_start+20, "reserved_1", 1)
+            ida_name.set_name(seg_start+20, "reserved_1", ida_name.SN_NOCHECK)
 
             idaapi.add_entry(seg_start+24, seg_start+24, "irq", 1)
 
-            ida_name.set_name(seg_start+28, "reserved_2", 1)
-
-            ida_auto.auto_make_code(seg_start)
+            ida_name.set_name(seg_start+28, "reserved_2", ida_name.SN_NOCHECK)
 
         start_offset += 0x20
 
