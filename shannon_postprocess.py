@@ -241,15 +241,13 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
     def get_ref_set_name(self, cur_ea, name):
 
         opcode = ida_ua.ua_mnem(cur_ea)
-        print("%x: %s -> %s" % (cur_ea, opcode, name))
+        #print("[d] %x: %s -> %s" % (cur_ea, opcode, name))
         if(opcode == "LDR"):
             target_ref = idc.get_operand_value(cur_ea, 1)
             target = int.from_bytes(ida_bytes.get_bytes(target_ref, 4), "little")
-            print(target)
             ida_name.set_name(target, name, ida_name.SN_NOCHECK)
         if(opcode == "B"):
             target = idc.get_operand_value(cur_ea, 0)
-            print(target)
             ida_name.set_name(target, name, ida_name.SN_NOCHECK)
 
     # creates strings which are at least 12 bytes long
