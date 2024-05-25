@@ -20,6 +20,8 @@ import ida_name
 
 import re
 
+import shannon_pal_reconstrutor as pal_re
+
 class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
     def __init__(self):
@@ -31,10 +33,9 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
         struct_id = ida_struct.get_struc_id("dbt_struct")
         all_structs = idautils.XrefsTo(struct_id, 0)
+        sptr = ida_struct.get_struc(struct_id)
 
-        for i in all_structs:
-
-            sptr = ida_struct.get_struc(struct_id)
+        for i in all_structs:           
                 
             str_ptr = ida_struct.get_member_by_name(sptr, "msg_ptr")
             str_offset = int.from_bytes(ida_bytes.get_bytes(i.frm+str_ptr.soff, 4), "little")
@@ -280,6 +281,10 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
     def auto_empty_finally(self):
 
+        idaapi.show_wait_box('HIDECANCEL\nPost-processing modem image, please wait...')
+
+        pal_re.find_basic_pal_functions()
+
         self.restore_ss_names()
         self.restore_cpp_names()
         self.create_long_strings()
@@ -378,6 +383,8 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
             # reschedule everything for a last auto analysis pass
             idc.plan_and_wait(idc.get_segm_start(s),idc.get_segm_end(s))
+
+        idaapi.hide_wait_box()
 
         return
 
