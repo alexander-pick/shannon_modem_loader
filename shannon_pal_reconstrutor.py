@@ -1,6 +1,6 @@
 #!/bin/python3
 
-# Samsung Shannon Modem Postprocessor
+# Samsung Shannon Modem PAL Reconstructor
 # This script is autoamtically executed by the loader
 # Alexander Pick 2024
 
@@ -20,39 +20,35 @@ import ida_nalt
 
 def find_basic_pal_functions():
 
-    sc = idautils.Strings()
+    pal_MsgSendTo_addr = idc.find_text(idaapi.get_imagebase(), idc.SEARCH_DOWN, 0, 0, "PAL_MSG_MAX_ENTITY_COUNT")
 
-    pal_MsgSendTo_addr = idaapi.BADADDR
+    # step 1 - find pal_MsgSendTo()
+    if(pal_MsgSendTo_addr != idaapi.BADADDR):
 
-    for i in sc:
+        # realign if we are off by one here (happens)
+        if(pal_MsgSendTo_addr % 4):
+            pal_MsgSendTo_addr += 1
 
-        # step 1 - find pal_MsgSendTo()
-        if("PAL_MSG_MAX_ENTITY_COUNT" in str(i)):
+        # most images have 2 xrefs to this string, ones is MsgSendTo
+        for xref in idautils.XrefsTo(pal_MsgSendTo_addr, 0):
 
-            # realign if we are off by one here (happens)
-            if(i.ea % 4):
-                i.ea += 1
+            func_start = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
 
-            # most images have 2 xrefs to this string, ones is MsgSendTo
-            for xref in idautils.XrefsTo(i.ea, 0):
+            num_xrefs = len(list(idautils.XrefsTo(func_start, 0)))
 
-                func_start = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
+            #pal_MsgSendTo has a lot of xrefs to itself, other candidate funcs don't have that
+            if(num_xrefs > 15):
 
-                num_xrefs = len(list(idautils.XrefsTo(func_start, 0)))
+                pal_MsgSendTo_addr = func_start
 
-                #pal_MsgSendTo has a lot of xrefs to itself, other candidate funcs don't have that
-                if(num_xrefs > 15):
+                # sanity check - validate that xref target is a function, or next
+                if(pal_MsgSendTo_addr ==  idaapi.BADADDR):
+                    continue
 
-                    pal_MsgSendTo_addr = func_start
+                print("[i] pal_MsgSendTo(): %x" % pal_MsgSendTo_addr)
+                ida_name.set_name(pal_MsgSendTo_addr, "pal_MsgSendTo", ida_name.SN_NOCHECK | ida_name.SN_FORCE)
 
-                    # sanity check - validate that xref target is a function, or next
-                    if(pal_MsgSendTo_addr ==  idaapi.BADADDR):
-                        continue
-
-                    print("[i] pal_MsgSendTo(): %x" % pal_MsgSendTo_addr)
-                    ida_name.set_name(pal_MsgSendTo_addr, "pal_MsgSendTo", ida_name.SN_NOCHECK | ida_name.SN_FORCE)
-
-    find_pal_msg_init(pal_MsgSendTo_addr)
+        find_pal_msg_init(pal_MsgSendTo_addr)
 
 def find_pal_msg_init(pal_MsgSendTo_addr):
     #step2 - find pal_MsgInit()
