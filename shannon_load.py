@@ -13,61 +13,48 @@ import ida_bytes
 import ida_nalt
 import ida_name
 import ida_expr
-import ida_ua
-import ida_funcs
 import ida_struct
+import ida_kernwin
 
 import struct
 
-# this function creates debug trace structures in the database
-def create_dbt_struct():
-
-    # DBT entries with file and string ref
-    struct_id = idc.add_struc(0, "dbg_trace", 0)
-    idc.add_struc_member(struct_id, "head", -1, idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "group", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "channel", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "num_param", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "msg_ptr", -1, idaapi.FF_DATA|idaapi.FF_DWORD|idaapi.FF_0OFF, -1, 4)
-    idc.add_struc_member(struct_id, "line", -1, idaapi.FF_DATA|idaapi.FF_DWORD, -1, 4) 
-    idc.add_struc_member(struct_id, "file", -1, idaapi.FF_DWORD, -1, 4) 
+import shannon_structs
 
 # This function will create DBT structs, DBT structs are debug references of various kind.
-# The head contains a type byte in position 4, this indicates if a structure is a direct 
+# The head contains a type byte in position 4, this indicates if a structure is a direct
 # string ref or something else.
-
 def make_dbt():
     sc = idautils.Strings()
 
     sc.setup(strtypes=[ida_nalt.STRTYPE_C],
-                  ignore_instructions=True, minlen=4)
+             ignore_instructions=True, minlen=4)
 
     sc.refresh()
 
     for i in sc:
-        if("DBT:" in str(i)):
-            
+        if ("DBT:" in str(i)):
+
             struct_name = "dbg_trace"
 
             # read DBT type
-            #header_type = int.from_bytes(ida_bytes.get_bytes(i.ea+3, 1), "little")           
+            # header_type = int.from_bytes(ida_bytes.get_bytes(i.ea+3, 1), "little")
             # if(header_type != 0x3a):
             #     struct_name = "dbt"
 
-            #print(i.ea)
+            # print(i.ea)
             struct_id = ida_struct.get_struc_id(struct_name)
             struct_size = ida_struct.get_struc_size(struct_id)
-            #print(struct_size)
+            # print(struct_size)
 
             # make sure we start on-point
-            offset = i.ea +  str(i).find("DBT:")
+            offset = i.ea + str(i).find("DBT:")
 
             ida_bytes.del_items(offset, 0,  struct_size)
-            ida_bytes.create_struct(offset, struct_size, struct_id) 
+            ida_bytes.create_struct(offset, struct_size, struct_id)
 
 # validate if the file can be processed by the loader
 def accept_file(fd, fname):
-    
+
     fd.seek(0x0)
 
     try:
@@ -75,11 +62,12 @@ def accept_file(fd, fname):
     except UnicodeDecodeError:
         return 0
 
-    if(image_type == b"TOC"):
+    if (image_type == b"TOC"):
         return {"format": "Shannon Baseband Image", "processor": "arm"}
 
     return 0
 
+# required IDA Pro load file function
 def load_file(fd, neflags, format):
 
     idaapi.set_processor_type(
@@ -96,11 +84,23 @@ def load_file(fd, neflags, format):
     # disable Coagulate and colapse
     idc.process_config_line("ANALYSIS = 0x9bff9ff7ULL ")
 
-    if(neflags & idaapi.NEF_RELOAD != 0):
+    if (neflags & idaapi.NEF_RELOAD != 0):
         return 1
 
-    idc.msg("\nIDA Pro Shannon Modem Loader\n")
-    idc.msg("https://github.com/alexander-pick/shannon_modem_loader\n\n")
+    # this is needed to clear the output window
+    output = ida_kernwin.find_widget("Output window")
+    ida_kernwin.activate_widget(output, True)
+    idaapi.process_ui_action("msglist:Clear")
+
+    idc.msg("\nIDA Pro 8.x+\n")
+    idc.msg('      /\ \                                                    '+"\n")
+    idc.msg('   ___\ \ \___      __      ___     ___     ___     ___       '+"\n")
+    idc.msg('  /`,__| \  _ `\  /`__`\  /` _ `\ /` _ `\  / __`\ /` _ `\     '+"\n")
+    idc.msg(' /\__, `\ \ \ \ \/\ \_\.\_/\ \/\ \/\ \/\ \/\ \_\ \/\ \/\ \    '+"\n")
+    idc.msg(' \/\____/\ \_\ \_\ \__/.\_\ \_\ \_\ \_\ \_\ \____/\ \_\ \_\   '+"\n")
+    idc.msg('  \/___/  \/_/\/_/\/__/\/_/\/_/\/_/\/_/\/_/\/___/  \/_/\/_/   '+"\n")
+    idc.msg('                                               Modem Loader   '+"\n\n")
+    idc.msg("More: https://github.com/alexander-pick/shannon_modem_loader\n\n")
 
     start_offset = 0x20
 
@@ -123,23 +123,23 @@ def load_file(fd, neflags, format):
         # map slices to segments
         idc.AddSeg(seg_start, seg_end, 0, 1, idaapi.saRel32Bytes, idaapi.scPub)
 
-        if("NV" in seg_name):
+        if ("NV" in seg_name):
             idc.set_segm_class(seg_start, "DATA")
         else:
             idc.set_segm_class(seg_start, "CODE")
-            
+
         idc.set_segm_name(seg_start, seg_name+"_file")
 
         fd.file2base(toc_info[1], seg_start, seg_end,  0)
 
         # set entry points of main and bootloader
-        if(seg_name == "BOOT"):
+        if (seg_name == "BOOT"):
             idaapi.add_entry(seg_start, seg_start, "bootloader_entry", 1)
             idc.set_cmt(seg_start, "bootloader entry point", 1)
             ida_auto.auto_make_code(seg_start)
 
         # process main segment and create vector table
-        if(seg_name == "MAIN"):
+        if (seg_name == "MAIN"):
 
             # 0x0  Reset
             # 0x4  Undefined Instruction
@@ -172,16 +172,22 @@ def load_file(fd, neflags, format):
 
         start_offset += 0x20
 
-    create_dbt_struct()
+    shannon_structs.add_dbt_struct()
+    shannon_structs.add_scatter_struct()
+    shannon_structs.add_mpu_region_struct()
+    shannon_structs.add_task_struct()
+
+    # needs to be done very early
     make_dbt()
 
-    # These 3 lines were awarded the most ugliest hack award 2024, runs a script which scheudles a callback without 
+    # These 3 lines were awarded the most ugliest hack award 2024, runs a script which scheudles a callback without
     # beeing unloaded with the loader.
 
     rv = ida_expr.idc_value_t()
-    idc_line = 'RunPythonStatement("exec(open(\''+ idaapi.idadir("python") +'/shannon_postprocess.py\').read())")'
+    idc_line = 'RunPythonStatement("exec(open(\'' + idaapi.idadir(
+        "python") + '/shannon_postprocess.py\').read())")'
     ida_expr.eval_idc_expr(rv, idaapi.BADADDR, idc_line)
 
-    idc.msg("[i] loader done\n")
+    idc.msg("[i] loader done, starting auto analysis\n")
 
     return 1

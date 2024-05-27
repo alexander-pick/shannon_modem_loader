@@ -24,4 +24,9 @@ fi
 cp -v shannon_load.py ${IDADIR}/loaders/
 cp -v shannon_postprocess.py ${IDADIR}/python/
 cp -v shannon_pal_reconstrutor.py ${IDADIR}/python/
+cp -v shannon_mpu.py ${IDADIR}/python/
+cp -v shannon_scatterload.py ${IDADIR}/python/
+cp -v shannon_generic.py ${IDADIR}/python/
+cp -v shannon_structs.py ${IDADIR}/python/
+
 ${IDADIR}/ida
