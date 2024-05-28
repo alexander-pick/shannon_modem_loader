@@ -70,21 +70,21 @@ def find_hw_init():
 def validate_mpu_candidate(bl_target):
 
     metrics = shannon_generic.get_metric(bl_target)
-    # idc.msg("[d] %x: loops: %d branch: %d length: %d basic blocks: %d xrefs: %d ldr: %d\n" % (
-    #     bl_target, len(metrics[0]), len(metrics[1]), metrics[2], metrics[3], len(metrics[4]), len(metrics[5])))
+    
+    #shannon_generic.print_metrics(bl_target, metrics)
 
     # exact metric:
-    # loops: 1 branch: 7 length: 32 basic blocks: 5
-    # loops: 2 branch: 10 length: 53 basic blocks: 7 xrefs: 1
+    # loops: 1 branch: 3 length: 32 basic blocks: 5 xrefs: 1 ldr: 6 calls: 7
+    # loops: 2 branch: 4 length: 53 basic blocks: 7 xrefs: 1 ldr: 6 calls: 8
 
-    if (len(metrics[0]) > 0 and len(metrics[3]) > 3 and metrics[2] < 64 and len(metrics[4]) == 1):
+    if (len(metrics[0]) > 0 and len(metrics[0]) < 3 and metrics[3] > 2 and metrics[2] < 64 and len(metrics[4]) == 1 and len(metrics[6]) > 6):
         idc.msg("[i] hw_MpuInit(): %x\n" % bl_target)
         ida_name.set_name(bl_target, " hw_MpuInit", ida_name.SN_NOCHECK)
 
         process_mpu_table(metrics[5])
 
     # if there are 250+ refs to the candidate function it is the exception handler
-    if (len(metrics[4]) > 250 and len(metrics[2]) < 24):
+    if (len(metrics[4]) > 250 and metrics[2] < 24):
         idc.msg("[i] hw_ExceptionHandler(): %x\n" % bl_target)
         ida_name.set_name(bl_target, " hw_ExceptionHandler",
                           ida_name.SN_NOCHECK)

@@ -135,14 +135,19 @@ def find_pal_init(found_msg_init, pal_MsgInit_addr):
             ida_name.set_name(pal_init_addr, "pal_Init", ida_name.SN_NOCHECK)
 
             metrics = shannon_generic.get_metric(pal_init_addr)
+            #shannon_generic.print_metrics(pal_init_addr, metrics)
 
-            for branch in metrics[1]:
-                # idc.msg("[d] possible init function: %x\n" % branch)
-                validate_if_task_scheduler(branch)
-                validate_if_dm_trace_log(branch)
+            for branch in metrics[6]:
+                first_operand = idc.get_operand_value(branch, 0)
+                #idc.msg("[d] possible init function: %x\n" % branch)
+                validate_if_task_scheduler(first_operand)
+                #idc.msg("[d] possible dm_trace function: %x\n" % branch)
+                validate_if_dm_trace_log(first_operand)
 
 def validate_if_dm_trace_log(bl_target):
+
     metrics = shannon_generic.get_metric(bl_target)
+    #shannon_generic.print_metrics(bl_target, metrics)
 
     # this function has an insane amount of xrefs, very unique
     if(len(metrics[4]) > 150000):
@@ -254,3 +259,5 @@ def identify_task_init(tbl_offset):
         tbl_offset += struct_size
 
         tasks += 1
+
+find_basic_pal_functions()

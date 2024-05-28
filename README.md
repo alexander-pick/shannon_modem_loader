@@ -10,7 +10,7 @@ To use the loader simply install `shannon_load.py` inside your IDA Pro's loader 
 
 Once installed open a `modem.bin` in IDA Pro, the loader should detect the TOC format and load the image accordingly. The postprocessor script will add additional segment information after the initial analysis has finished. Adding the segments right from the start will confuse and slow down the analysis process.
 
-The postprocessing module does most of the magic and it will take a bit to run, please be patient. All steps the post processor performs are in the individual files copied to `<IDAHOME>/python/`. You can use them as individual python modules if needed. See the post processor for details.
+The postprocessing module does most of the magic and it will take a bit to run, please be patient. All steps the post processor performs are in the individual files copied to `<IDAHOME>/python/`. You can use them as individual python modules if needed. See the post processor for details. A complete analysis of a modem image takes about 30 minutes to complete on average hardware.
 
 ## How The Loader Works
 
@@ -22,7 +22,7 @@ The loader will recognize a TOC based Shannon modem binary and load it. After ba
 * identify the hardware and mpu init function
 * restore the mpu table and map memory accordingly
 * identify the scatter loader
-* perform scatter loading
+* perform scatter loading (todo: decompression)
 * find the platform abstraction layer init function and restore all tasks
 
 After that the idb should be ready to go.
@@ -42,6 +42,10 @@ Tested with IDA Pro 8.3 and 8.4.
 ## Bugs
 
 This code is WIP and should be used as such. If you encounter a modem image not proper processed, please fill a bug report so I can fix the loader for it. Make sure to note the exact version so I can locate the file.
+
+## Motivation 
+
+I took a Shannon related tranings and had to work with Ghidra. After working with IDA for 20 years I feel much more comfortable using it compared to the dragon engine. So I started the work on this loader before another Shannon centric training this year. Doing things from scratch allowed me to get much more into the details of each and every aspect. The loader as it is resembles my idea of how I want it to work and which features I think are needed to do proper research on the bianary.
 
 ## License
 

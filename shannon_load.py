@@ -41,10 +41,8 @@ def make_dbt():
             # if(header_type != 0x3a):
             #     struct_name = "dbt"
 
-            # print(i.ea)
             struct_id = ida_struct.get_struc_id(struct_name)
             struct_size = ida_struct.get_struc_size(struct_id)
-            # print(struct_size)
 
             # make sure we start on-point
             offset = i.ea + str(i).find("DBT:")
@@ -94,8 +92,8 @@ def load_file(fd, neflags, format):
 
     idc.msg("\nIDA Pro 8.x+\n")
     idc.msg('      /\ \                                                    '+"\n")
-    idc.msg('   ___\ \ \___      __      ___     ___     ___     ___       '+"\n")
-    idc.msg('  /`,__| \  _ `\  /`__`\  /` _ `\ /` _ `\  / __`\ /` _ `\     '+"\n")
+    idc.msg('   ___\ \ \___      __       __      __     ___      __       '+"\n")
+    idc.msg('  /`,__| \  _ `\  /`__`\   /` _`\  /` _`\  / __`\  /` _`\     '+"\n")
     idc.msg(' /\__, `\ \ \ \ \/\ \_\.\_/\ \/\ \/\ \/\ \/\ \_\ \/\ \/\ \    '+"\n")
     idc.msg(' \/\____/\ \_\ \_\ \__/.\_\ \_\ \_\ \_\ \_\ \____/\ \_\ \_\   '+"\n")
     idc.msg('  \/___/  \/_/\/_/\/__/\/_/\/_/\/_/\/_/\/_/\/___/  \/_/\/_/   '+"\n")

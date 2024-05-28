@@ -11,6 +11,9 @@ import ida_bytes
 import ida_ua
 import ida_name
 import idautils
+import ida_idp
+import ida_funcs
+import ida_auto
 
 # adds a memory segment to the database
 def add_memory_segment(seg_start, seg_size, seg_name, seg_type="DATA", sparse=True):
@@ -103,58 +106,102 @@ def resolve_ref(str_addr):
 # we have a limited number of candidates and highly optimized code which will
 # most likely keep it's functional characteristics over time
 
+# The function can be used in 2 ways - for fingerprinting and finding a specific 
+# function in a small group of candidates - or - for getting all branches, ldr,
+# xrefs etc. of a function with a single call
+
+# function returns:
+# 0 - loops -> list with offsets
+# 1 - branch -> list with offsets
+# 2 - length -> count
+# 3 - bb -> count
+# 4 - xrefs -> list with offsets
+# 5 - ldrs -> list with offsets
+
 def get_metric(bl_target):
 
     loops = []
     branch = []
     ldr = []
+    xrefs = []
+    calls = []
 
     length = 0
-
+    flow_size = 0
+    
     func_start = idc.get_func_attr(bl_target, idc.FUNCATTR_START)
     func_end = idc.get_func_attr(bl_target, idc.FUNCATTR_END)
 
     func_cur = bl_target
 
-    if (func_end != idaapi.BADADDR):
+    # check that we don't validate the void
+    if (func_end != idaapi.BADADDR and func_cur != idaapi.BADADDR):
 
         while (func_cur < func_end):
 
             length += 1
 
             func_cur = idc.next_head(func_cur)
+            #idc.msg("[d] offset %x\n" % func_cur)
 
             opcode = ida_ua.ua_mnem(func_cur)
 
             # bailout
             if (opcode == None):
-                # idc.msg("[d] no opcode at %x\n" % func_cur)
+                #idc.msg("[d] no opcode at %x\n" % func_cur)
                 continue
 
-            if ("BL" in opcode):
+            # we reached the end of the world
+            if(ida_idp.is_ret_insn(func_cur)):
+                if(func_cur != func_end):
+                    # something is off, let's realign, happens in optimzed RT code
+                    func_o = ida_funcs.get_func(func_start)
+                    
+                    if func_o is not None:
+                        func_o.end_ea = func_cur
+                        ida_funcs.update_func(func_o)
+                        ida_funcs.reanalyze_function(func_o)
+                        ida_auto.auto_wait()
+                break
+
+            # check if a basic block ends or call, if so, it is a branch (exclude return instructions)
+            if ((ida_idp.is_basic_block_end(func_cur,0) or ida_idp.is_call_insn(func_cur)) and not ida_idp.is_ret_insn(func_cur)):
 
                 first_operand = idc.get_operand_value(func_cur, 0)
 
-                # sometimes the boundary calculated by IDA is a bit off if firmware
-                # contains DCD references at the end of the function
-                if (first_operand == "LR"):
-                    break
+                if(first_operand != idaapi.BADADDR):
 
-                # idc.msg("[d] BL@%x -> %x\n" % (func_cur, first_operand))
+                    if(ida_idp.is_call_insn(func_cur)):
+                        #idc.msg("[d] %s call at %x -> %x\n" % (opcode, func_cur, first_operand))
+                        calls.append(func_cur)
+                    elif (first_operand >= func_start and func_cur > first_operand):
+                        # jump backwards inside function, most likely a loop
+                        #idc.msg("[d] %s loop at %x -> %x\n" % (opcode, func_cur, first_operand))
+                        loops.append(func_cur)
+                    else:
+                        #idc.msg("[d] %s branch at %x -> %x\n" % (opcode, func_cur, first_operand))
+                        branch.append(func_cur)
 
-                if (first_operand >= func_start and func_cur > first_operand):
-                    # jump backwards inside function, most likely a loop
-                    loops.append(first_operand)
                 else:
-                    branch.append(first_operand)
+                    idc.msg("[d] errorous branch target at %x -> %x\n" % (func_cur, first_operand))
+
 
             if ("LDR" in opcode):
                 ldr.append(idc.get_operand_value(func_cur, 1))
 
-    # get basic block count of function
-    function = idaapi.get_func(func_start)
-    flow_chart = idaapi.FlowChart(function)
+        # get basic block count of function
+        function = idaapi.get_func(func_start)
 
-    xrefs = list(idautils.XrefsTo(func_start, 0))
+        if(function != None):
+            flow_chart = idaapi.FlowChart(function)
+            flow_size = flow_chart.size
+        else:
+            idc.msg("[e] error getting flowchart for function at %x" % func_start)
 
-    return [loops, branch, length, flow_chart.size, xrefs, ldr]
+        xrefs = list(idautils.XrefsTo(func_start, 0))
+
+    return [loops, branch, length, flow_size, xrefs, ldr, calls]
+
+def print_metrics(addr, metrics):
+    idc.msg("[d] %x: loops: %d branch: %d length: %d basic blocks: %d xrefs: %d ldr: %d calls: %d\n" % (
+        addr, len(metrics[0]), len(metrics[1]), metrics[2], metrics[3], len(metrics[4]), len(metrics[5]), len(metrics[6])))
