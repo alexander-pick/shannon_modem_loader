@@ -132,7 +132,7 @@ def get_metric(bl_target):
     func_start = idc.get_func_attr(bl_target, idc.FUNCATTR_START)
     func_end = idc.get_func_attr(bl_target, idc.FUNCATTR_END)
 
-    idc.msg("[d] get_metrics(%x) -> %x %x\n" % (bl_target, func_start, func_end))
+    #idc.msg("[d] get_metrics(%x) -> %x %x\n" % (bl_target, func_start, func_end))
 
     func_cur = bl_target
 
@@ -158,10 +158,11 @@ def get_metric(bl_target):
 
                     # something is off, let's realign, happens in optimzed RT code
                     func_o = ida_funcs.get_func(func_start)
-                    func_end = func_cur
                     
                     if func_o is not None:
+                        #idc.msg("[d] setting new boundaries for function at %x -> end was %x now is %x\n" % (func_start, func_end, func_cur))
                         func_o.end_ea = func_cur
+                        func_end = func_cur
                         ida_funcs.update_func(func_o)
                         ida_funcs.reanalyze_function(func_o)
                         ida_auto.auto_wait()

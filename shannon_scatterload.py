@@ -37,13 +37,13 @@ def process_scatterload(reset_func_cur):
 # recreate function at the given offset, i.e. if something was re-aligned around it
 # this has to be done sometimes in RT optimized code to get proper results
 def recreate_function(op):
+    ida_funcs.del_func(op)
     ida_bytes.del_items(op)
     idc.create_insn(op)
     ida_funcs.add_func(op)
     func_o = ida_funcs.get_func(op)
                     
     if func_o is not None:
-        ida_funcs.update_func(func_o)
         ida_funcs.reanalyze_function(func_o)
         ida_auto.auto_wait()
 
@@ -90,8 +90,6 @@ def create_scatter_tbl(scatterload):
     # make a "unique" list by converting it to a set and back
     op_list = list(set(op_list))
 
-    return # currently disabled, working on / waiting for a fix for the graph in IDA going mad 
-
     ops = find_scatter_functions(op_list)
     process_scattertbl(scatter_start, scatter_size, ops)
 
@@ -121,7 +119,7 @@ def find_scatter_functions(op_list):
 
         metrics = shannon_generic.get_metric(op)
 
-        shannon_generic.print_metrics(op, metrics)
+        #shannon_generic.print_metrics(op, metrics)
 
         scatter_func_offset = op
 
@@ -204,14 +202,14 @@ def process_scattertbl(scatter_start, scatter_size, ops):
         for op in ops:
             if(entry[3] == op):
                 match index:
-                    case 0:
-                        idc.msg("[d] scatter_null\n")
-                        # ignore this for now
-                    case 1:
-                        idc.msg("[d] scatter_zero\n")
-                        # let's ignore that for now
+                    # case 0:
+                    #     idc.msg("[d] scatter_null\n")
+                    #     # ignore this for now
+                    # case 1:
+                    #     idc.msg("[d] scatter_zero\n")
+                    #     # let's ignore that for now
                     case 2:
-                        idc.msg("[d] scatter_copy\n")
+                        #idc.msg("[d] scatter_copy\n")
                         # copy in idb
                         if(entry[2] > 0):
                             # create a new segment for the scatter and copy bytes over
@@ -219,7 +217,7 @@ def process_scattertbl(scatter_start, scatter_size, ops):
                             chunk = ida_bytes.get_bytes(entry[0], entry[2])
                             ida_bytes.put_bytes(entry[1], chunk)
                     case 3:
-                        idc.msg("[d] scatter_comp\n")
+                        idc.msg("[d] TODO: implement scatter decompression\n")
                         # todo, implement decompression
             index += 1
         scatter_id += 1
