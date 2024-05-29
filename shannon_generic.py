@@ -132,6 +132,8 @@ def get_metric(bl_target):
     func_start = idc.get_func_attr(bl_target, idc.FUNCATTR_START)
     func_end = idc.get_func_attr(bl_target, idc.FUNCATTR_END)
 
+    idc.msg("[d] get_metrics(%x) -> %x %x" % (bl_target, func_start, func_end))
+
     func_cur = bl_target
 
     # check that we don't validate the void
@@ -140,7 +142,6 @@ def get_metric(bl_target):
         while (func_cur < func_end):
 
             length += 1
-
             func_cur = idc.next_head(func_cur)
             #idc.msg("[d] offset %x\n" % func_cur)
 
@@ -156,6 +157,7 @@ def get_metric(bl_target):
                 if(func_cur != func_end):
                     # something is off, let's realign, happens in optimzed RT code
                     func_o = ida_funcs.get_func(func_start)
+                    func_end = func_cur
                     
                     if func_o is not None:
                         func_o.end_ea = func_cur
