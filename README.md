@@ -29,15 +29,15 @@ After that the idb should be ready to go.
 
 # About Samsung Shannon 
 
-Shannon is an IC series by Samsung LSI. Most noteable product in the series is the Shannon baseband processor. Shannon is the name of a range of ICs and not the name of the modem itself. You might find other Shannon ICs made by Samsung. A typical set of Shannon ICs consists of a baseband, RF transciever, powermanagement and envelope tracking IC. All of them have different part numbers. E.g. Shannon baseband is 5300, the RF transciever is 5510, PMIC is 5200 and so on. So don't get confused, these are all different parts. You won't find much about Shannon on Samsungs website, they refer to the baseband as Exynos Modem instead.
+Shannon is an IC series by Samsung LSI. Most noteable product in the series is the Shannon baseband processor. Shannon is the name of a range of ICs and not the name of the modem itself. You might find other Shannon ICs made by Samsung. A typical set of Shannon ICs consists of a baseband, RF transciever, powermanagement and a envelope tracking IC. All of them have different part numbers. E.g. Shannon baseband is 5300, the RF transciever is 5510, PMIC is 5200 and so on. So don't get confused, these are all different parts. You won't find much about Shannon on Samsungs website, they refer to the baseband as Exynos Modem instead.
 
-Nowadays the baseband IC is most of the time integrated into the Exynos SOC directly. For special configs, standalone baseband ICs are still sold.
+Nowadays the baseband IC is most of the time integrated into the Exynos SOC directly. For special configs, standalone baseband ICs are still sold. User of the stand alone solution are i.e. automotive or IoT vendors.
 
 Historically the Shannon baseband was at least developed since 2005. During the early days it went under the name of CMC. The CMC220 was the first LTE version of the IC which launched in 2011, shortly after the first Exynos processor. Samsung is still celebrating it in some of their shareholder presentations.
 
 ## IDA Compatibility And Installation
 
-Tested with IDA Pro 8.3 and 8.4.
+Tested with IDA Pro 8.x (8.3 to 8.4 SP2).
 
 ## Bugs
 

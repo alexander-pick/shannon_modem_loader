@@ -13,6 +13,7 @@ import idautils
 import ida_name
 import ida_struct
 import ida_funcs
+import ida_auto
 
 import shannon_generic
 
@@ -23,7 +24,7 @@ def process_scatterload(reset_func_cur):
 
     scatterload = idc.get_operand_value(scatter_target, 0)
 
-    idc.msg("[i[ scatterload(): %x\n" % (scatterload))
+    idc.msg("[i] scatterload(): %x\n" % (scatterload))
 
     if (scatterload == None):
         idc.msg("[e] scatterload == None\n")
@@ -34,13 +35,22 @@ def process_scatterload(reset_func_cur):
     return scatterload
 
 # recreate function at the given offset, i.e. if something was re-aligned around it
+# this has to be done sometimes in RT optimized code to get proper results
 def recreate_function(op):
     ida_bytes.del_items(op)
     idc.create_insn(op)
     ida_funcs.add_func(op)
+    func_o = ida_funcs.get_func(op)
+                    
+    if func_o is not None:
+        ida_funcs.update_func(func_o)
+        ida_funcs.reanalyze_function(func_o)
+        ida_auto.auto_wait()
 
 # create the scatter table
 def create_scatter_tbl(scatterload):
+
+    recreate_function(scatterload)
 
     scatter_tbl = idc.get_operand_value(scatterload, 1)
 
@@ -80,6 +90,8 @@ def create_scatter_tbl(scatterload):
     # make a "unique" list by converting it to a set and back
     op_list = list(set(op_list))
 
+    return # currently disabled, working on / waiting for a fix for the graph in IDA going mad 
+
     ops = find_scatter_functions(op_list)
     process_scattertbl(scatter_start, scatter_size, ops)
 
@@ -97,6 +109,7 @@ def find_scatter_functions(op_list):
     # tell the scatterload functions apart using metrics instead of a pattern.
 
     for op in op_list:
+
         # get boundaries of function
         idc.msg("[i] processing scatter function at %x\n" % op)
       
@@ -120,9 +133,14 @@ def find_scatter_functions(op_list):
                 # we found zero init
                 ida_name.set_name(op, "scatterload_zeroinit",
                                   ida_name.SN_NOCHECK | ida_name.SN_FORCE)
+
                 found = True
-                scatter_zero = op
-                idc.msg("[i] found scatterload_zeroinit() at %x\n" % op)
+
+                if(scatter_zero != None):
+                    idc.msg("[e] scatterload_zeroinit() found at %x, already found at %x before\n" % (op, scatter_zero))
+                else:    
+                    scatter_zero = op
+                    idc.msg("[i] found scatterload_zeroinit() at %x\n" % op)
                 break
 
         for branch in metrics[0]:
@@ -133,9 +151,14 @@ def find_scatter_functions(op_list):
                 # we found a loop to the first inst, this is copy
                 ida_name.set_name(op, "scatterload_copy",
                                   ida_name.SN_NOCHECK | ida_name.SN_FORCE)
-                scatter_copy = op
+                
                 found = True
-                idc.msg("[i] found scatterload_copy() at %x\n" % op)
+                
+                if(scatter_copy != None):
+                    idc.msg("[e] scatterload_copy found() at %x, already found at %x before\n" % (op, scatter_copy))
+                else:    
+                    scatter_copy = op
+                    idc.msg("[i] found scatterload_copy() at %x\n" % op)
                 break
 
         if ((len(metrics[0]) > 3) and (found == False)):
@@ -143,9 +166,14 @@ def find_scatter_functions(op_list):
             # decompression requires multiple loops
             ida_name.set_name(op, "scatterload_decompress",
                               ida_name.SN_NOCHECK | ida_name.SN_FORCE)
-            scatter_comp = op
+            
             found = True
-            idc.msg("[i] found scatterload_decompress() at %x\n"  % op)
+
+            if(scatter_comp != None):
+                    idc.msg("[e] scatterload_decompress() found at %x, already found at %x before\n" % (op, scatter_comp))
+            else:    
+                scatter_comp = op
+                idc.msg("[i] found scatterload_decompress() at %x\n"  % op)
             continue
 
         # if it's nothing of the above, it is null

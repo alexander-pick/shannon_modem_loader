@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Samsung Shannon Modem Loader, Installer Script
+# A lean IDA Pro loader for fancy baseband research
+# Alexander Pick 2024
+
 if [ -z ${IDADIR} ]; then 
 
     if [ -z ${1} ]; then

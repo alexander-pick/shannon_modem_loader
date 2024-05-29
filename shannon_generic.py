@@ -132,7 +132,7 @@ def get_metric(bl_target):
     func_start = idc.get_func_attr(bl_target, idc.FUNCATTR_START)
     func_end = idc.get_func_attr(bl_target, idc.FUNCATTR_END)
 
-    idc.msg("[d] get_metrics(%x) -> %x %x" % (bl_target, func_start, func_end))
+    idc.msg("[d] get_metrics(%x) -> %x %x\n" % (bl_target, func_start, func_end))
 
     func_cur = bl_target
 
@@ -155,6 +155,7 @@ def get_metric(bl_target):
             # we reached the end of the world
             if(ida_idp.is_ret_insn(func_cur)):
                 if(func_cur != func_end):
+
                     # something is off, let's realign, happens in optimzed RT code
                     func_o = ida_funcs.get_func(func_start)
                     func_end = func_cur
@@ -185,7 +186,7 @@ def get_metric(bl_target):
                         branch.append(func_cur)
 
                 else:
-                    idc.msg("[d] errorous branch target at %x -> %x\n" % (func_cur, first_operand))
+                    idc.msg("[e] errorous branch target at %x -> %x\n" % (func_cur, first_operand))
 
 
             if ("LDR" in opcode):
