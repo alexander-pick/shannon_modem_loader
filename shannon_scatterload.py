@@ -54,10 +54,15 @@ def create_scatter_tbl(scatterload):
 
     scatter_tbl = idc.get_operand_value(scatterload, 1)
 
-    scatter_start = int.from_bytes(
-        ida_bytes.get_bytes(scatter_tbl, 4), "little")
-    scatter_stop = int.from_bytes(
-        ida_bytes.get_bytes(scatter_tbl+4, 4), "little")
+    start_bytes = ida_bytes.get_bytes(scatter_tbl, 4)
+    stop_bytes = ida_bytes.get_bytes(scatter_tbl+4, 4)
+
+    if(start_bytes == None or stop_bytes == None):
+        idc.msg("[e] unable to create scatter table\n" % op)
+        return
+
+    scatter_start = int.from_bytes(start_bytes, "little")    
+    scatter_stop = int.from_bytes(stop_bytes, "little")
 
     scatter_start = (scatter_start + scatter_tbl) & 0xFFFFFFFF
     scatter_stop = (scatter_stop + scatter_tbl) & 0xFFFFFFFF
@@ -66,7 +71,7 @@ def create_scatter_tbl(scatterload):
     struct_id = ida_struct.get_struc_id("scatter")
     struct_size = ida_struct.get_struc_size(struct_id)
 
-    idc.msg("[i] scatter table at %x, size %d, tbl has %d entries\n" %
+    idc.msg("[i] scatter table at %x, size %d, table has %d entries\n" %
             (scatter_start, scatter_size, scatter_size/struct_size))
     
     ida_name.set_name(scatter_start, "scatter_tbl", ida_name.SN_NOCHECK)
