@@ -1,6 +1,6 @@
-# Simple Shannon Baseband Loader for [IDA Pro](https://hex-rays.com/ida-pro/) 8.x
+# Simple Shannon Baseband Loader for IDA Pro
 
-This is a simple firmware loader plugin to load Samsung Exynos "Shannon" modem images in [IDA Pro](https://hex-rays.com/ida-pro/) 8.x. This loader is designed to be lean and easy to understand. It should work with most Samsung Exynos modem images containing a TOC header. These can be found e.g. in updates for Exynos based phones. The typical file name is `modem.bin`. Sometimes the images are compressed using lz4, uncompress them before loading using lz4 utility present on most Linux distros. 
+This is a simple firmware loader plugin to load Samsung Exynos "Shannon" modem images in [IDA Pro](https://hex-rays.com/ida-pro/). This loader is designed to be lean and easy to understand. It should work with most Samsung Exynos modem images containing a TOC header. These can be found e.g. in updates for Exynos based phones. The typical file name is `modem.bin`. Sometimes the images are compressed using lz4, uncompress them before loading using lz4 utility present on most Linux distros. 
 
 # How To Use This Loader
 
@@ -45,13 +45,13 @@ Since I work on Linux the `install.sh` is a bash script. If you are using OSX or
 
 Script | Installation Directory
 |---|---|
-shannon_load.py | <IDADIR>/loaders/
-shannon_postprocess.py | <IDADIR>/python/
-shannon_pal_reconstructor.py | <IDADIR>/python/
-shannon_mpu.py | <IDADIR>/python/
-shannon_scatterload.py | <IDADIR>/python/
-shannon_generic.py | <IDADIR>/python/
-shannon_structs.py | <IDADIR>/python/
+shannon_load.py | IDADIR/loaders/
+shannon_postprocess.py | IDADIR/python/
+shannon_pal_reconstructor.py | IDADIR/python/
+shannon_mpu.py | IDADIR/python/
+shannon_scatterload.py | IDADIR/python/
+shannon_generic.py | IDADIR/python/
+shannon_structs.py | IDADIR/python/
 
 ## Bugs
 
