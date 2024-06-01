@@ -81,25 +81,25 @@ def validate_mpu_candidate(bl_target):
     # metrics:
     # 0 loops (list)    1 or 2
     # 1 branch (list)
-    # 2 length          32-94 max
+    # 2 length          32-70
     # 3 basicblocks     > 4
     # 4 xrefs (list)    always 1
     # 5 ldr (list)      6 or more
     # 6 calls (list)    6 or more
 
     # sample metric:
-    # loops: 1 branch: 3 length: 32 basic blocks: 5 xrefs: 1 ldr: 6  calls: 7
-    # loops: 2 branch: 4 length: 53 basic blocks: 7 xrefs: 1 ldr: 6  calls: 8
-    # loops: 1 branch: 3 length: 32 basic blocks: 5 xrefs: 1 ldr: 6 calls: 6
-    # loops: 1 branch: 3 length: 32 basic blocks: 5 xrefs: 1 ldr: 6 calls: 6
-    # loops: 2 branch: 6 length: 70 basic blocks: 9 xrefs: 1 ldr: 16 calls: 9
+    # loops: 2 branch: 4 length: 53 basic blocks: 7 xrefs: 1 ldr: 6 calls: 8 (moto-training)
+    # loops: 2 branch: 6 length: 70 basic blocks: 9 xrefs: 1 ldr: 16 calls: 9 (eng)
+    
+    # false 
+    # loops: 2 branch: 5 length: 74 basic blocks: 10 xrefs: 1 ldr: 14 calls: 9
 
-    if ((len(metrics[0]) > 0 and len(metrics[0]) < 3) and metrics[3] > 4 and (metrics[2] > 24 and metrics[2] < 94) and len(metrics[4]) == 1 and len(metrics[6]) > 5 and (len(metrics[5]) > 5)):
+    if ((len(metrics[0]) > 0 and len(metrics[0]) < 3) and metrics[3] > 4 and (metrics[2] > 24 and metrics[2] < 72) and len(metrics[4]) == 1 and len(metrics[6]) > 5 and (len(metrics[5]) > 5)):
         
-        idc.msg("[i] hw_MpuInit(): %x\n" % bl_target)
-        ida_name.set_name(bl_target, " hw_MpuInit", ida_name.SN_NOCHECK)
-
-        process_mpu_table(metrics[5])
+        if(process_mpu_table(metrics[5])):
+            # @tocheck: if any false positive occures, need to valdiate branches for calls to enable/disable 
+            idc.msg("[i] hw_MpuInit(): %x\n" % bl_target)
+            ida_name.set_name(bl_target, " hw_MpuInit", ida_name.SN_NOCHECK)       
 
     # if there are 250+ refs to the candidate function it is the exception handler or get_chip_name
     if (len(metrics[4]) > 250 and metrics[2] > 24):
@@ -112,12 +112,28 @@ def validate_mpu_candidate(bl_target):
         ida_name.set_name(bl_target, " get_chip_name",
                           ida_name.SN_NOCHECK)
 
+def is_main_segment(addr):
+
+    seg_t = ida_segment.get_segm_by_name("MAIN_file")
+
+    if(addr > seg_t.start_ea and addr < seg_t.end_ea):
+        return True
+    else:
+        return False
+
 # identifies the mpu tabl and processes it
 def process_mpu_table(tbl_candidates):
+
     for ldr in tbl_candidates:
+    
         if(ldr > 0x1000):
             mpu_tbl = int.from_bytes(ida_bytes.get_bytes(ldr, 4), "little")
             idc.msg("[i] mpu tbl candidate at %x\n" % mpu_tbl)
+            
+            # prevents false positives
+            if(not is_main_segment(mpu_tbl)):
+                idc.msg("[e] candidate outside boundaries\n")
+                return False
 
             struct_id = ida_struct.get_struc_id("mpu_region")
             struct_size = ida_struct.get_struc_size(struct_id)
@@ -145,11 +161,11 @@ def process_mpu_table(tbl_candidates):
 
                 if(num == 0xff):
                     idc.msg("[i] reached end of mpu tbl at %x\n" % mpu_tbl)
-                    return
+                    return True
                 
                 if(entries == max_entries):
                     idc.msg("[e] too many entries in table at %x\n" % mpu_tbl)
-                    return
+                    return False
 
                 xn = int.from_bytes(ida_bytes.get_bytes(mpu_tbl+xn_ptr.soff, 4), "little")
 
@@ -162,6 +178,8 @@ def process_mpu_table(tbl_candidates):
 
                 mpu_tbl += struct_size
                 entries += 1
+    
+    return True
 
 #for debugging purpose export SHANNON_WORKFLOW="NO"
 if os.environ.get('SHANNON_WORKFLOW') == "NO":

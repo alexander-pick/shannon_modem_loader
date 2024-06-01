@@ -60,7 +60,7 @@ def create_scatter_tbl(scatterload):
     stop_bytes = ida_bytes.get_bytes(scatter_tbl+4, 4)
 
     if(start_bytes == None or stop_bytes == None):
-        idc.msg("[e] unable to create scatter table\n" % op)
+        idc.msg("[e] unable to create scatter table\n")
         return
 
     scatter_start = int.from_bytes(start_bytes, "little")    
@@ -403,7 +403,7 @@ def scatterload_decompress(src, dst, cnt):
             # calculate the source pointer for backward copy
             src_ptr = dst_index - offset
 
-            # if both are set 0x2 == b1100
+            # if both are set 0x12 == b1100
             if bit_2_3 == 0xC:
 
                 # if bits set, get one more byte
