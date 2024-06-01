@@ -1,6 +1,6 @@
 #!/bin/python3
 
-# Samsung Shannon Modem Scatter Load Processor
+# Samsung Shannon Modem Loader - Scatter Processor
 # This script is autoamtically executed by the loader
 # Alexander Pick 2024
 
@@ -16,6 +16,8 @@ import ida_funcs
 import ida_auto
 
 import shannon_generic
+
+import os
 
 # process the scatter load function
 def process_scatterload(reset_func_cur):
@@ -164,7 +166,7 @@ def find_scatter_functions(op_list):
                     idc.msg("[i] found scatterload_copy() at %x\n" % op)
                 break
 
-        if ((len(metrics[0]) > 3) and (found == False)):
+        if ((len(metrics[0]) >= 3) and (found == False)):
 
             # decompression requires multiple loops
             ida_name.set_name(op, "scatterload_decompress",
@@ -187,11 +189,11 @@ def find_scatter_functions(op_list):
             
     return [scatter_null, scatter_zero , scatter_copy, scatter_comp]
 
-# entry
-# 1 - src
-# 2 - dst
-# 3 - size
-# 4 - op
+# scatter struct
+# 0 - src
+# 1 - dst
+# 2 - size
+# 3 - op
 
 def process_scattertbl(scatter_start, scatter_size, ops):
 
@@ -205,7 +207,9 @@ def process_scattertbl(scatter_start, scatter_size, ops):
        
         index = 0
         for op in ops:
+            #check if the requested op matches a known function offset
             if(entry[3] == op):
+                #if it does, at which index of the op list?
                 match index:
                     # case 0:
                     #     idc.msg("[d] scatter_null\n")
@@ -217,13 +221,19 @@ def process_scattertbl(scatter_start, scatter_size, ops):
                         #idc.msg("[d] scatter_copy\n")
                         # copy in idb
                         if(entry[2] > 0):
+                            
                             # create a new segment for the scatter and copy bytes over
                             shannon_generic.add_memory_segment(entry[1], entry[2], "SCATTER_"+str(scatter_id), "CODE", False)
                             chunk = ida_bytes.get_bytes(entry[0], entry[2])
                             ida_bytes.put_bytes(entry[1], chunk)
-                    case 3:
-                        idc.msg("[d] TODO: implement scatter decompression\n")
-                        # todo, implement decompression
+
+                    case 3: #decpmpression
+                        
+                        shannon_generic.add_memory_segment(entry[1], entry[2], "SCATCOMP_"+str(scatter_id), "CODE", False)
+
+                        chunk = scatterload_decompress(entry[0], entry[1], entry[2])
+                        idc.msg("[i] decompressed %d bytes of %d, from %x to %x\n" % (chunk, entry[2], entry[0], entry[1]))
+
             index += 1
         scatter_id += 1
 
@@ -306,8 +316,8 @@ def find_scatter():
                             mode_switch += 1
                             continue
 
-                        idc.msg(
-                            "[d] second supervisor mode switch found: %x\n" % func_cur)
+                        # idc.msg(
+                        #     "[d] second supervisor mode switch found: %x\n" % func_cur)
 
                         reset_func_cur = func_cur
 
@@ -334,4 +344,94 @@ def find_scatter():
             if (func_cur >= reset_func_end):
                 return
 
-# find_scatter()
+# decompressions are always "fun" to re, thanks roxfan for 
+# a hint to fix an anoying error in this
+
+# after reversing it I think it is LZ77 which is also one of the compressions
+# the ARM linker supports next to RLE
+ 
+def scatterload_decompress(src, dst, cnt):
+
+    src_index = 0
+    dst_index = 0
+
+    while dst_index < cnt:
+
+        # read the current byte from the source and increment the source index
+        cur_byte = ida_bytes.get_byte(src + src_index)
+        src_index += 1
+
+        # extract the lower 2 bits of the current byte
+        cpy_bytes = cur_byte & 3
+
+        # if cpy_bytes is 0, read the next byte from the source
+        if cpy_bytes == 0:
+            cpy_bytes = ida_bytes.get_byte(src + src_index)
+            src_index += 1
+
+        # extract the upper 4 bits of the current byte to get 'high_4_b'
+        high_4_b = cur_byte >> 4
+
+        # if 'high_4_b' is 0, read the next byte from the source
+        if high_4_b == 0:
+            high_4_b = ida_bytes.get_byte(src + src_index)
+            src_index += 1
+
+        # copy x bytes from the source to the destination
+        for _ in range(cpy_bytes):
+            
+            # bailout
+            if dst_index > cnt:
+                idc.msg("[e] scatterload(): dst copy - dst_index > cnt (%d > %d)\n" % (dst_index, cnt))
+                break
+
+            # copy byte from source to destination
+            ida_bytes.put_byte(dst + dst_index, ida_bytes.get_byte(src + src_index))
+            dst_index += 1
+            src_index += 1
+
+        # if 'high_4_b' is non-zero, perform additional operations
+        if high_4_b:
+
+            # read the offset byte from the source and increment the source index
+            offset = ida_bytes.get_byte(src + src_index)
+            src_index += 1
+
+            # extract bits 2 and 3 from the current byte
+            bit_2_3 = cur_byte & 0xC
+
+            # calculate the source pointer for backward copy
+            src_ptr = dst_index - offset
+
+            # if both are set 0x2 == b1100
+            if bit_2_3 == 0xC:
+
+                # if bits set, get one more byte
+                bit_2_3 = ida_bytes.get_byte(src + src_index)
+                src_index += 1
+                src_ptr -= 256 * bit_2_3
+
+            else:
+                # otherwise, adjust the source pointer based on extracted bits
+                src_ptr -= 64 * bit_2_3
+
+            # copy 'high_4_b + 1' bytes from the previously decompressed data
+            for _ in range(high_4_b + 1):
+                
+                # bailout
+                if dst_index > cnt:
+                    idc.msg("[e] scatterload(): decomp copy - dst_index > cnt (%d > %d)\n" % (dst_index, cnt))
+                    break
+
+                # copy byte from previously decompressed data to the current destination
+                ida_bytes.put_byte(dst + dst_index, ida_bytes.get_byte(dst + src_ptr))
+                dst_index += 1
+                src_ptr += 1
+
+    # return the final source index after decompression
+    return src_index
+
+#for debugging purpose export SHANNON_WORKFLOW="NO"
+if os.environ.get('SHANNON_WORKFLOW') == "NO":
+    idc.msg("[i] running scatter load in standalone mode")
+    find_scatter()

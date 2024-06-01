@@ -4,7 +4,7 @@ This is a simple firmware loader plugin to load Samsung Exynos "Shannon" modem i
 
 # How To Use This Loader
 
-To use the loader simply install `shannon_load.py` inside your [IDA Pro](https://hex-rays.com/ida-pro/)'s loader folder and the rest of the python files into the [IDA Pro](https://hex-rays.com/ida-pro/) python folder. `install.sh` will assist you with this task, if you want to do it manually please take a look inside. For [IDA Pro](https://hex-rays.com/ida-pro/) 8.3 and 8.4 the default installation directory should be detected by default. Otherwise you can specify the installation directory as the first parameter to the script. 
+To use the loader just install `shannon_load.py` inside your [IDA Pro](https://hex-rays.com/ida-pro/)'s loader folder and the rest of the python files into the [IDA Pro](https://hex-rays.com/ida-pro/) python folder. `install.sh` will assist you with this task, if you want to do it manually please take a look inside. For [IDA Pro](https://hex-rays.com/ida-pro/) 8.3 and 8.4 the default installation directory should be detected by default. Otherwise you can specify the installation directory as the first parameter to the script. 
 
 `./install.sh ~/your-ida-installdir/`
 
@@ -24,7 +24,7 @@ The loader will recognize a TOC based Shannon modem binary and load it. After ba
 * identify the hardware and mpu init function
 * restore the mpu table and map memory accordingly
 * identify the scatter loader
-* perform scatter loading (todo: decompression)
+* perform scatter loading and decompression ([LZ77-like](https://developer.arm.com/documentation/dui0474/j/linker-optimization-features/how-compression-is-applied) compression scheme)
 * find the platform abstraction layer init function and restore all tasks
 
 After that the `idb` should be ready to go.
@@ -52,6 +52,8 @@ shannon_mpu.py | IDADIR/python/
 shannon_scatterload.py | IDADIR/python/
 shannon_generic.py | IDADIR/python/
 shannon_structs.py | IDADIR/python/
+shannon_names.py | IDADIR/python/
+shannon_debug_traces.py | IDADIR/python/
 
 ## Bugs
 

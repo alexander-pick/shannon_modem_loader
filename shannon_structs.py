@@ -1,6 +1,6 @@
 #!/bin/python3
 
-# Samsung Shannon Modem Loader, Structs
+# Samsung Shannon Modem Loader - Structs
 # A lean IDA Pro loader for fancy baseband research
 # Alexander Pick 2024
 

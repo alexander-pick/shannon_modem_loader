@@ -32,5 +32,7 @@ cp -v shannon_mpu.py ${IDADIR}/python/
 cp -v shannon_scatterload.py ${IDADIR}/python/
 cp -v shannon_generic.py ${IDADIR}/python/
 cp -v shannon_structs.py ${IDADIR}/python/
+cp -v shannon_names.py ${IDADIR}/python/
+cp -v shannon_debug_traces.py ${IDADIR}/python/
 
 ${IDADIR}/ida

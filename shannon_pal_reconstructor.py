@@ -1,6 +1,6 @@
 #!/bin/python3
 
-# Samsung Shannon Modem PAL Reconstructor
+# Samsung Shannon Modem Loader - PAL Reconstructor
 # This script is autoamtically executed by the loader
 # Alexander Pick 2024
 
@@ -17,11 +17,15 @@ import ida_segment
 
 import shannon_generic
 
+import os
+
 # This code identifies a couple of functions of the platform abstraction layer and uses
 # these to find the task table. This could be done in a much simpler fashion by searching
 # for PALTskTm and work from there, but using the heuristic below a couple of func refs
 # will be reconstructed and named which are quite important for future analysis
 def find_basic_pal_functions():
+
+    idc.msg("[i] trying to identify some important pal functions ands tasks\n")
 
     # search only in main to avoid unnecessary long runtimes
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
@@ -260,4 +264,7 @@ def identify_task_init(tbl_offset):
 
         tasks += 1
 
-find_basic_pal_functions()
+#for debugging purpose export SHANNON_WORKFLOW="NO"
+if os.environ.get('SHANNON_WORKFLOW') == "NO":
+    idc.msg("[i] running pal reconstruct in standalone mode\n")
+    find_basic_pal_functions()

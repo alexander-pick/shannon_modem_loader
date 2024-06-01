@@ -1,6 +1,6 @@
 #!/bin/python3
 
-# Samsung Shannon Modem Loader, Generic Functions
+# Samsung Shannon Modem Loader - Generic Functions
 # A lean IDA Pro loader for fancy baseband research
 # Alexander Pick 2024
 
@@ -12,11 +12,20 @@ import ida_ua
 import ida_name
 import idautils
 import ida_idp
-import ida_funcs
-import ida_auto
+# import ida_funcs
+# import ida_auto
 
 # adds a memory segment to the database
 def add_memory_segment(seg_start, seg_size, seg_name, seg_type="DATA", sparse=True):
+
+    # sanity check
+    if(seg_size < 0):
+        idc.msg("[e] cannot create a segment at %x with negative size %d\n" % (seg_start, seg_size))
+        return
+    
+    if(seg_start == 0xFFFFFFFF):
+        idc.msg("[e] cannot create a segment at 0xFFFFFFFF\n")
+        return
 
     seg_end = seg_start + seg_size
 
@@ -154,18 +163,22 @@ def get_metric(bl_target):
 
             # we reached the end of the world
             if(ida_idp.is_ret_insn(func_cur)):
-                if(func_cur != func_end):
+                # disabled, caused issues with IDA auto analysis
+                #if(func_cur != func_end and idc.next_head(func_cur) != func_end):
 
-                    # something is off, let's realign, happens in optimzed RT code
-                    func_o = ida_funcs.get_func(func_start)
+                    # # # something is off, let's realign, happens in optimzed RT code
+                    # func_o = ida_funcs.get_func(func_start)
                     
-                    if func_o is not None:
-                        #idc.msg("[d] setting new boundaries for function at %x -> end was %x now is %x\n" % (func_start, func_end, func_cur))
-                        func_o.end_ea = func_cur
-                        func_end = func_cur
-                        ida_funcs.update_func(func_o)
-                        ida_funcs.reanalyze_function(func_o)
-                        ida_auto.auto_wait()
+                    # if func_o is not None:
+                    #     idc.msg("[d] differing boundaries for function at %x -> end was %x should be %x\n" % (func_start, func_end, func_cur))
+                    #     func_o.end_ea = func_cur
+                    #     func_end = func_cur
+                    #     ida_funcs.update_func(func_o)
+                    #     ida_funcs.reanalyze_function(func_o)
+                    #     ida_auto.auto_wait()
+                        # ida_funcs.del_func(func_start)
+                        # ida_funcs.add_func(func_start, func_cur)
+                
                 break
 
             # check if a basic block ends or call, if so, it is a branch (exclude return instructions)
