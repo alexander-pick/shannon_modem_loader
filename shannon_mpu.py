@@ -28,6 +28,10 @@ def find_hw_init():
     seg_start = seg_t.start_ea
     seg_end = seg_t.end_ea - seg_t.start_ea
 
+    if (seg_end == idaapi.BADADDR):
+        idc.msg("[e] cannot find MAIN_file boundaries\n")
+        return 
+
     offset = ida_search.find_text(
         seg_start, seg_end, 0, regex, ida_search.SEARCH_DOWN)
 

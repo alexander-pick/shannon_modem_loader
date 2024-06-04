@@ -279,6 +279,8 @@ def read_scattertbl(scatter_start, scatter_size):
 # find scatter related code
 def find_scatter():
 
+    idc.msg("[i] trying to find scatter functions\n")
+
     mode_switch = 0
 
     reset_vector_offset = idc.get_name_ea_simple("reset_v")
