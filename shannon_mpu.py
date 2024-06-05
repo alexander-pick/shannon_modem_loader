@@ -30,7 +30,7 @@ def find_hw_init():
 
     if (seg_end == idaapi.BADADDR):
         idc.msg("[e] cannot find MAIN_file boundaries\n")
-        return 
+        return
 
     offset = shannon_generic.search_text(seg_start, seg_end, text)
 
@@ -77,8 +77,8 @@ def find_hw_init():
 def validate_mpu_candidate(bl_target):
 
     metrics = shannon_generic.get_metric(bl_target)
-    
-    # enable metrics debug output 
+
+    # enable metrics debug output
     #shannon_generic.print_metrics(bl_target, metrics)
 
     # metrics:
@@ -93,33 +93,32 @@ def validate_mpu_candidate(bl_target):
     # sample metric:
     # loops: 2 branch: 4 length: 53 basic blocks: 7 xrefs: 1 ldr: 6 calls: 8 (moto-training)
     # loops: 2 branch: 6 length: 70 basic blocks: 9 xrefs: 1 ldr: 16 calls: 9 (eng)
-    
-    # false 
+
+    # false
     # loops: 2 branch: 5 length: 74 basic blocks: 10 xrefs: 1 ldr: 14 calls: 9
 
-    if ((len(metrics[0]) > 0 and len(metrics[0]) < 3) and metrics[3] > 4 and (metrics[2] > 24 and metrics[2] < 72) and len(metrics[4]) == 1 and len(metrics[6]) > 5 and (len(metrics[5]) > 5)):
-        
-        if(process_mpu_table(metrics[5])):
-            # @tocheck: if any false positive occures, need to valdiate branches for calls to enable/disable 
+    if ((len(metrics[0]) > 0 and len(metrics[0]) < 3) and metrics[3] > 4 and (metrics[2] > 24 and metrics[2] < 72) 
+        and len(metrics[4]) == 1 and len(metrics[6]) > 5 and (len(metrics[5]) > 5)):
+
+        if (process_mpu_table(metrics[5])):
+            # @tocheck: if any false positive occures, need to valdiate branches for calls to enable/disable
             idc.msg("[i] hw_MpuInit(): %x\n" % bl_target)
-            ida_name.set_name(bl_target, " hw_MpuInit", ida_name.SN_NOCHECK)       
+            ida_name.set_name(bl_target, " hw_MpuInit", ida_name.SN_NOCHECK)
 
     # if there are 250+ refs to the candidate function it is the exception handler or get_chip_name
     if (len(metrics[4]) > 250 and metrics[2] > 24):
         idc.msg("[i] hw_ExceptionHandler(): %x\n" % bl_target)
-        ida_name.set_name(bl_target, " hw_ExceptionHandler",
-                          ida_name.SN_NOCHECK)
-        
+        ida_name.set_name(bl_target, " hw_ExceptionHandler", ida_name.SN_NOCHECK)
+
     if (len(metrics[4]) > 200 and metrics[2] < 3):
         idc.msg("[i] get_chip_name(): %x\n" % bl_target)
-        ida_name.set_name(bl_target, " get_chip_name",
-                          ida_name.SN_NOCHECK)
+        ida_name.set_name(bl_target, " get_chip_name", ida_name.SN_NOCHECK)
 
 def is_main_segment(addr):
 
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
 
-    if(addr > seg_t.start_ea and addr < seg_t.end_ea):
+    if (addr > seg_t.start_ea and addr < seg_t.end_ea):
         return True
     else:
         return False
@@ -128,13 +127,13 @@ def is_main_segment(addr):
 def process_mpu_table(tbl_candidates):
 
     for ldr in tbl_candidates:
-    
-        if(ldr > 0x1000):
+
+        if (ldr > 0x1000):
             mpu_tbl = int.from_bytes(ida_bytes.get_bytes(ldr, 4), "little")
             idc.msg("[i] mpu tbl candidate at %x\n" % mpu_tbl)
-            
+
             # prevents false positives
-            if(not is_main_segment(mpu_tbl)):
+            if (not is_main_segment(mpu_tbl)):
                 idc.msg("[e] candidate outside boundaries\n")
                 return False
 
@@ -147,42 +146,45 @@ def process_mpu_table(tbl_candidates):
             max_entries = 0x20
             entries = 0
 
-            while(1):
+            while (1):
 
-                ida_bytes.del_items(mpu_tbl, 0,  struct_size)
+                ida_bytes.del_items(mpu_tbl, 0, struct_size)
                 ida_bytes.create_struct(mpu_tbl, struct_size, struct_id)
-                
+
                 num_ptr = ida_struct.get_member_by_name(sptr, "num")
                 addr_ptr = ida_struct.get_member_by_name(sptr, "addr")
                 size_ptr = ida_struct.get_member_by_name(sptr, "size")
 
                 xn_ptr = ida_struct.get_member_by_name(sptr, "size")
 
-                num = int.from_bytes(ida_bytes.get_bytes(mpu_tbl+num_ptr.soff, 4), "little")
-                addr = int.from_bytes(ida_bytes.get_bytes(mpu_tbl+addr_ptr.soff, 4), "little")
-                size = int.from_bytes(ida_bytes.get_bytes(mpu_tbl+size_ptr.soff, 4), "little")
+                num = int.from_bytes(ida_bytes.get_bytes(mpu_tbl + num_ptr.soff, 4), "little")
+                addr = int.from_bytes(ida_bytes.get_bytes(mpu_tbl + addr_ptr.soff, 4), "little")
+                size = int.from_bytes(ida_bytes.get_bytes(mpu_tbl + size_ptr.soff, 4), "little")
 
-                if(num == 0xff):
+                if (num == 0xff):
                     idc.msg("[i] reached end of mpu tbl at %x\n" % mpu_tbl)
                     return True
-                
-                if(entries == max_entries):
+
+                if (entries == max_entries):
                     idc.msg("[e] too many entries in table at %x\n" % mpu_tbl)
                     return False
 
-                xn = int.from_bytes(ida_bytes.get_bytes(mpu_tbl+xn_ptr.soff, 4), "little")
+                xn = int.from_bytes(ida_bytes.get_bytes(
+                    mpu_tbl + xn_ptr.soff, 4), "little")
 
                 seg_type = "CODE"
 
-                if(xn > 0):
+                if (xn > 0):
                     seg_type = "DATA"
 
-                shannon_generic.add_memory_segment(addr, size, "MPU_"+str(num), seg_type, 0)
+                shannon_generic.add_memory_segment(
+                    addr, size, "MPU_" + str(num), seg_type, 0)
 
                 mpu_tbl += struct_size
                 entries += 1
-    
+
     return True
+
 
 #for debugging purpose export SHANNON_WORKFLOW="NO"
 if os.environ.get('SHANNON_WORKFLOW') == "NO":

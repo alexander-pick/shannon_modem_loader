@@ -44,15 +44,18 @@ def restore_ss_names():
     seg_start = seg_t.start_ea
     seg_end = seg_t.end_ea - seg_t.start_ea
 
-    ss_offset = shannon_generic.search_text(seg_start, seg_end, "ss_DecodeGmmFacilityMsg")
+    ss_offset = shannon_generic.search_text(
+        seg_start, seg_end, "ss_DecodeGmmFacilityMsg")
 
     if (ss_offset != idaapi.BADADDR):
+        
         # step 2 - find xrefs to this name, essentially should be just one xref
         for xref in idautils.XrefsTo(ss_offset, 0):
 
             # sanity check - validate that xref target is a function, or next
             if (idc.get_func_attr(xref.frm, idc.FUNCATTR_START) == idaapi.BADADDR):
                 continue
+            
             # step 3 - iterate over the next instructions until we find a function call
 
             xref_str = None
@@ -60,14 +63,16 @@ def restore_ss_names():
             prev_offset = xref.frm
 
             while (tries < 5):
+                
                 # forward search, max 5 instructions
                 xref_str_tmp = idc.next_head(prev_offset)
                 opcode = ida_ua.ua_mnem(xref_str_tmp)
+                
                 if (opcode == "BL"):
                     # idc.msg("[d] found BL at %x\n" % xref_str_tmp)
                     # docs said this is a list, but seems to be a generator?
                     xref_str = next(
-                        idautils.CodeRefsFrom(xref_str_tmp,  0))
+                        idautils.CodeRefsFrom(xref_str_tmp, 0))
                     break
                 else:
                     prev_offset = xref_str_tmp
@@ -79,14 +84,16 @@ def restore_ss_names():
             idc.msg("[i] found verbose ss_ name function: %x\n" % xref_str)
 
             # step 4 - iterate over the all calls to this function
-            for xref_func in idautils.XrefsTo(xref_str,  0):
+            for xref_func in idautils.XrefsTo(xref_str, 0):
 
                 tries = 0
                 prev_offset = xref_func.frm
 
                 while (tries < 5):
+                    
                     cur_offset = idc.prev_head(prev_offset)
                     opcode = ida_ua.ua_mnem(cur_offset)
+                    
                     if (opcode == "LDR"):
                         # idc.msg("[d] found LDR at %x\n" % cur_offset)
                         break
@@ -104,6 +111,7 @@ def restore_ss_names():
                 if (func_name == None):
                     # idc.msg("[d] %x: failed sanity check (None)\n" % str_addr)
                     check_failed = 1
+                    
                 # this in elif to avoid err with undefined bla
                 elif (len(func_name.decode()) < 8):
                     # idc.msg("[d] %x: failed sanity check (length)\n" % str_addr)
@@ -159,7 +167,8 @@ def restore_ss_names():
                                 prev_offset, idc.prev_head(str_addr))
                             idaapi.set_name(
                                 prev_offset, shannon_generic.function_find_name(func_name_str))
-                            
+
+
 #for debugging purpose export SHANNON_WORKFLOW="NO"
 if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running names in standalone mode")

@@ -22,7 +22,7 @@ import os
 # process the scatter load function
 def process_scatterload(reset_func_cur):
 
-    scatter_target = next(idautils.CodeRefsFrom(reset_func_cur,  0))
+    scatter_target = next(idautils.CodeRefsFrom(reset_func_cur, 0))
 
     scatterload = idc.get_operand_value(scatter_target, 0)
 
@@ -39,12 +39,13 @@ def process_scatterload(reset_func_cur):
 # recreate function at the given offset, i.e. if something was re-aligned around it
 # this has to be done sometimes in RT optimized code to get proper results
 def recreate_function(op):
+
     ida_funcs.del_func(op)
     ida_bytes.del_items(op)
     idc.create_insn(op)
     ida_funcs.add_func(op)
     func_o = ida_funcs.get_func(op)
-                    
+
     if func_o is not None:
         ida_funcs.reanalyze_function(func_o)
         ida_auto.auto_wait()
@@ -57,13 +58,13 @@ def create_scatter_tbl(scatterload):
     scatter_tbl = idc.get_operand_value(scatterload, 1)
 
     start_bytes = ida_bytes.get_bytes(scatter_tbl, 4)
-    stop_bytes = ida_bytes.get_bytes(scatter_tbl+4, 4)
+    stop_bytes = ida_bytes.get_bytes(scatter_tbl + 4, 4)
 
-    if(start_bytes == None or stop_bytes == None):
+    if (start_bytes == None or stop_bytes == None):
         idc.msg("[e] unable to create scatter table\n")
         return
 
-    scatter_start = int.from_bytes(start_bytes, "little")    
+    scatter_start = int.from_bytes(start_bytes, "little")
     scatter_stop = int.from_bytes(stop_bytes, "little")
 
     scatter_start = (scatter_start + scatter_tbl) & 0xFFFFFFFF
@@ -74,8 +75,8 @@ def create_scatter_tbl(scatterload):
     struct_size = ida_struct.get_struc_size(struct_id)
 
     idc.msg("[i] scatter table at %x, size %d, table has %d entries\n" %
-            (scatter_start, scatter_size, scatter_size/struct_size))
-    
+            (scatter_start, scatter_size, scatter_size / struct_size))
+
     ida_name.set_name(scatter_start, "scatter_tbl", ida_name.SN_NOCHECK)
 
     tbl = read_scattertbl(scatter_start, scatter_size)
@@ -100,6 +101,7 @@ def create_scatter_tbl(scatterload):
     ops = find_scatter_functions(op_list)
     process_scattertbl(scatter_start, scatter_size, ops)
 
+# find the scatter functions in database
 def find_scatter_functions(op_list):
 
     # possible scatter ops
@@ -110,14 +112,14 @@ def find_scatter_functions(op_list):
 
     # I am aware that there are some patterns and stuff to identify these which originate in basespec research
     # by KAIST. At this point we already have a very small amout of candidates, decompression algorithms use
-    # multiple loops, zeroinit will zero a couple of regs, and cpy will loop to itself. This is easy enough to 
+    # multiple loops, zeroinit will zero a couple of regs, and cpy will loop to itself. This is easy enough to
     # tell the scatterload functions apart using metrics instead of a pattern.
 
     for op in op_list:
 
         # get boundaries of function
         idc.msg("[i] processing scatter function at %x\n" % op)
-      
+
         found = False
 
         # process functions
@@ -126,7 +128,7 @@ def find_scatter_functions(op_list):
 
         metrics = shannon_generic.get_metric(op)
 
-        #shannon_generic.print_metrics(op, metrics)
+        # shannon_generic.print_metrics(op, metrics)
 
         scatter_func_offset = op
 
@@ -141,9 +143,10 @@ def find_scatter_functions(op_list):
 
                 found = True
 
-                if(scatter_zero != None):
-                    idc.msg("[e] scatterload_zeroinit() found at %x, already found at %x before\n" % (op, scatter_zero))
-                else:    
+                if (scatter_zero != None):
+                    idc.msg("[e] scatterload_zeroinit() found at %x, already found at %x before\n" % (
+                        op, scatter_zero))
+                else:
                     scatter_zero = op
                     idc.msg("[i] found scatterload_zeroinit() at %x\n" % op)
                 break
@@ -156,12 +159,13 @@ def find_scatter_functions(op_list):
                 # we found a loop to the first inst, this is copy
                 ida_name.set_name(op, "scatterload_copy",
                                   ida_name.SN_NOCHECK | ida_name.SN_FORCE)
-                
+
                 found = True
-                
-                if(scatter_copy != None):
-                    idc.msg("[e] scatterload_copy found() at %x, already found at %x before\n" % (op, scatter_copy))
-                else:    
+
+                if (scatter_copy != None):
+                    idc.msg("[e] scatterload_copy found() at %x, already found at %x before\n" % (
+                        op, scatter_copy))
+                else:
                     scatter_copy = op
                     idc.msg("[i] found scatterload_copy() at %x\n" % op)
                 break
@@ -171,14 +175,15 @@ def find_scatter_functions(op_list):
             # decompression requires multiple loops
             ida_name.set_name(op, "scatterload_decompress",
                               ida_name.SN_NOCHECK | ida_name.SN_FORCE)
-            
+
             found = True
 
-            if(scatter_comp != None):
-                    idc.msg("[e] scatterload_decompress() found at %x, already found at %x before\n" % (op, scatter_comp))
-            else:    
+            if (scatter_comp != None):
+                idc.msg("[e] scatterload_decompress() found at %x, already found at %x before\n" % (
+                    op, scatter_comp))
+            else:
                 scatter_comp = op
-                idc.msg("[i] found scatterload_decompress() at %x\n"  % op)
+                idc.msg("[i] found scatterload_decompress() at %x\n" % op)
             continue
 
         # if it's nothing of the above, it is null
@@ -186,8 +191,8 @@ def find_scatter_functions(op_list):
             ida_name.set_name(op, "scatterload_null",
                               ida_name.SN_NOCHECK | ida_name.SN_FORCE)
             scatter_null = op
-            
-    return [scatter_null, scatter_zero , scatter_copy, scatter_comp]
+
+    return [scatter_null, scatter_zero, scatter_copy, scatter_comp]
 
 # scatter struct
 # 0 - src
@@ -195,6 +200,7 @@ def find_scatter_functions(op_list):
 # 2 - size
 # 3 - op
 
+#process the scatter table
 def process_scattertbl(scatter_start, scatter_size, ops):
 
     tbl = read_scattertbl(scatter_start, scatter_size)
@@ -203,13 +209,14 @@ def process_scattertbl(scatter_start, scatter_size, ops):
 
     for entry in tbl:
 
-        idc.msg("[i] processing scatter - src:%x dst: %x size: %d op: %x\n" % (entry[0],entry[1],entry[2],entry[3]))
-       
+        idc.msg("[i] processing scatter - src:%x dst: %x size: %d op: %x\n" %
+                (entry[0], entry[1], entry[2], entry[3]))
+
         index = 0
         for op in ops:
-            #check if the requested op matches a known function offset
-            if(entry[3] == op):
-                #if it does, at which index of the op list?
+            # check if the requested op matches a known function offset
+            if (entry[3] == op):
+                # if it does, at which index of the op list?
                 match index:
                     # case 0:
                     #     idc.msg("[d] scatter_null\n")
@@ -218,21 +225,33 @@ def process_scattertbl(scatter_start, scatter_size, ops):
                     #     idc.msg("[d] scatter_zero\n")
                     #     # let's ignore that for now
                     case 2:
-                        #idc.msg("[d] scatter_copy\n")
+
+                        # idc.msg("[d] scatter_copy\n")
                         # copy in idb
-                        if(entry[2] > 0):
-                            
+
+                        if (entry[2] > 0):
+
                             # create a new segment for the scatter and copy bytes over
-                            shannon_generic.add_memory_segment(entry[1], entry[2], "SCATTER_"+str(scatter_id), "CODE", False)
+                            shannon_generic.add_memory_segment(entry[1], entry[2],
+                                                               "SCATTER_" + str(scatter_id),
+                                                               "CODE", False)
+
                             chunk = ida_bytes.get_bytes(entry[0], entry[2])
+
                             ida_bytes.put_bytes(entry[1], chunk)
 
-                    case 3: #decpmpression
-                        
-                        shannon_generic.add_memory_segment(entry[1], entry[2], "SCATCOMP_"+str(scatter_id), "CODE", False)
+                    case 3:  # decpmpression
 
                         chunk = scatterload_decompress(entry[0], entry[1], entry[2])
-                        idc.msg("[i] decompressed %d bytes of %d, from %x to %x\n" % (chunk, entry[2], entry[0], entry[1]))
+
+                        shannon_generic.add_memory_segment(entry[1], len(chunk),
+                                                           "SCATCOMP_" + str(scatter_id),
+                                                           "CODE", False)
+
+                        idaapi.put_bytes(entry[1], chunk)
+
+                        idc.msg("[i] decompressed %d bytes of %d, from %x to %x\n"
+                                % (len(chunk), entry[2], entry[0], entry[1]))
 
             index += 1
         scatter_id += 1
@@ -248,30 +267,35 @@ def read_scattertbl(scatter_start, scatter_size):
 
     scatter_offset = scatter_start
 
-    while (scatter_offset < (scatter_start+scatter_size)):
+    while (scatter_offset < (scatter_start + scatter_size)):
 
         entry = []
 
-        ida_bytes.del_items(scatter_offset, 0,  struct_size)
+        ida_bytes.del_items(scatter_offset, 0, struct_size)
         ida_bytes.create_struct(scatter_offset, struct_size, struct_id)
-        
+
         src_ptr = ida_struct.get_member_by_name(sptr, "src")
+
         entry.append(int.from_bytes(ida_bytes.get_bytes(
-            scatter_offset+src_ptr.soff, 4), "little"))
+            scatter_offset + src_ptr.soff, 4), "little"))
 
         dst_ptr = ida_struct.get_member_by_name(sptr, "dst")
+
         entry.append(int.from_bytes(ida_bytes.get_bytes(
-            scatter_offset+dst_ptr.soff, 4), "little"))
+            scatter_offset + dst_ptr.soff, 4), "little"))
 
         size_ptr = ida_struct.get_member_by_name(sptr, "size")
+
         entry.append(int.from_bytes(ida_bytes.get_bytes(
-            scatter_offset+size_ptr.soff, 4), "little"))
+            scatter_offset + size_ptr.soff, 4), "little"))
 
         op_ptr = ida_struct.get_member_by_name(sptr, "op")
+
         entry.append(int.from_bytes(ida_bytes.get_bytes(
-            scatter_offset+op_ptr.soff, 4), "little"))
+            scatter_offset + op_ptr.soff, 4), "little"))
 
         tbl.append(entry)
+
         scatter_offset += struct_size
 
     return tbl
@@ -286,8 +310,7 @@ def find_scatter():
     reset_vector_offset = idc.get_name_ea_simple("reset_v")
 
     # get boundaries of function
-    reset_func_start = idc.get_func_attr(
-        reset_vector_offset, idc.FUNCATTR_START)
+    reset_func_start = idc.get_func_attr(reset_vector_offset, idc.FUNCATTR_START)
     reset_func_end = idc.get_func_attr(reset_vector_offset, idc.FUNCATTR_END)
 
     if (reset_func_start != idaapi.BADADDR and reset_func_end != idaapi.BADADDR):
@@ -318,8 +341,7 @@ def find_scatter():
                             mode_switch += 1
                             continue
 
-                        # idc.msg(
-                        #     "[d] second supervisor mode switch found: %x\n" % func_cur)
+                        # idc.msg("[d] second supervisor mode switch found: %x\n" % func_cur)
 
                         reset_func_cur = func_cur
 
@@ -335,8 +357,7 @@ def find_scatter():
                             # scatterload is the first branch in main, right after the crt (reset vector)
                             if ("B" == reset_opcode):
 
-                                scatterload = process_scatterload(
-                                    reset_func_cur)
+                                scatterload = process_scatterload(reset_func_cur)
                                 create_scatter_tbl(scatterload)
                                 return
 
@@ -347,18 +368,21 @@ def find_scatter():
             if (func_cur >= reset_func_end):
                 return
 
-# decompressions are always "fun" to re, thanks roxfan for 
-# a hint to fix an anoying error in this
+# decompressions are always "fun" to re, thanks roxfan for a hint to fix an
+# anoying error in this
 
 # after reversing it I think it is LZ77 which is also one of the compressions
 # the ARM linker supports next to RLE
- 
+
+# decompress from src to dst, input buffer cnt
 def scatterload_decompress(src, dst, cnt):
 
     src_index = 0
     dst_index = 0
 
-    while dst_index < cnt:
+    output_buffer = bytearray()
+
+    while (src_index < cnt):
 
         # read the current byte from the source and increment the source index
         cur_byte = ida_bytes.get_byte(src + src_index)
@@ -368,7 +392,7 @@ def scatterload_decompress(src, dst, cnt):
         cpy_bytes = cur_byte & 3
 
         # if cpy_bytes is 0, read the next byte from the source
-        if cpy_bytes == 0:
+        if (cpy_bytes == 0):
             cpy_bytes = ida_bytes.get_byte(src + src_index)
             src_index += 1
 
@@ -376,25 +400,26 @@ def scatterload_decompress(src, dst, cnt):
         high_4_b = cur_byte >> 4
 
         # if 'high_4_b' is 0, read the next byte from the source
-        if high_4_b == 0:
+        if (high_4_b == 0):
             high_4_b = ida_bytes.get_byte(src + src_index)
             src_index += 1
 
         # copy x bytes from the source to the destination
         for _ in range(cpy_bytes):
-            
-            # bailout
-            if dst_index > cnt:
-                idc.msg("[e] scatterload(): dst copy - dst_index > cnt (%d > %d)\n" % (dst_index, cnt))
-                break
+
+            if (dst_index >= len(output_buffer)):
+                output_buffer = output_buffer.ljust(dst_index + 1, b"\x00")
 
             # copy byte from source to destination
-            ida_bytes.put_byte(dst + dst_index, ida_bytes.get_byte(src + src_index))
+            byte = ida_bytes.get_byte(src + src_index)
+            # ida_bytes.put_byte(dst + dst_index, byte)
+            output_buffer[dst_index] = byte
+
             dst_index += 1
             src_index += 1
 
         # if 'high_4_b' is non-zero, perform additional operations
-        if high_4_b:
+        if (high_4_b):
 
             # read the offset byte from the source and increment the source index
             offset = ida_bytes.get_byte(src + src_index)
@@ -407,7 +432,7 @@ def scatterload_decompress(src, dst, cnt):
             src_ptr = dst_index - offset
 
             # if both are set 0x12 == b1100
-            if bit_2_3 == 0xC:
+            if (bit_2_3 == 0xC):
 
                 # if bits set, get one more byte
                 bit_2_3 = ida_bytes.get_byte(src + src_index)
@@ -420,21 +445,23 @@ def scatterload_decompress(src, dst, cnt):
 
             # copy 'high_4_b + 1' bytes from the previously decompressed data
             for _ in range(high_4_b + 1):
-                
-                # bailout
-                if dst_index > cnt:
-                    idc.msg("[e] scatterload(): decomp copy - dst_index > cnt (%d > %d)\n" % (dst_index, cnt))
-                    break
+
+                if (dst_index >= len(output_buffer)):
+                    output_buffer = output_buffer.ljust(dst_index + 1, b"\x00")
 
                 # copy byte from previously decompressed data to the current destination
-                ida_bytes.put_byte(dst + dst_index, ida_bytes.get_byte(dst + src_ptr))
+                byte = ida_bytes.get_byte(dst + src_ptr)
+                # ida_bytes.put_byte(dst + dst_index, byte)
+                output_buffer[dst_index] = byte
+
                 dst_index += 1
                 src_ptr += 1
 
     # return the final source index after decompression
-    return src_index
+    return bytes(list(output_buffer))
 
-#for debugging purpose export SHANNON_WORKFLOW="NO"
+
+# for debugging purpose export SHANNON_WORKFLOW="NO"
 if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running scatter load in standalone mode")
     find_scatter()

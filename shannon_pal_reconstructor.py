@@ -32,7 +32,8 @@ def find_basic_pal_functions():
     seg_start = seg_t.start_ea
     seg_end = seg_t.end_ea - seg_t.start_ea
 
-    pal_MsgSendTo_addr = shannon_generic.search_text(seg_start, seg_end, "PAL_MSG_MAX_ENTITY_COUNT")
+    pal_MsgSendTo_addr = shannon_generic.search_text(
+        seg_start, seg_end, "PAL_MSG_MAX_ENTITY_COUNT")
 
     # step 1 - find pal_MsgSendTo()
     if (pal_MsgSendTo_addr != idaapi.BADADDR):
@@ -97,7 +98,7 @@ def find_pal_msg_init(pal_MsgSendTo_addr):
                 # low xp sidequest - find MsgDescriptorTbl (because we can)
                 while (tbl_cnt < 5):
 
-                    task_desc_offset = pal_MsgInit_addr+4+(4*tbl_cnt)
+                    task_desc_offset = pal_MsgInit_addr + 4 + (4 * tbl_cnt)
 
                     opcode = ida_ua.ua_mnem(task_desc_offset)
 
@@ -153,9 +154,9 @@ def validate_if_dm_trace_log(bl_target):
     #shannon_generic.print_metrics(bl_target, metrics)
 
     # this function has an insane amount of xrefs, very unique
-    if(len(metrics[4]) > 150000):
+    if (len(metrics[4]) > 150000):
         idc.msg("[i] dm_TraceMsg(): %x\n" % bl_target)
-        ida_name.set_name(bl_target, "dm_TraceMsg", ida_name.SN_NOCHECK)   
+        ida_name.set_name(bl_target, "dm_TraceMsg", ida_name.SN_NOCHECK)
 
 
 # this function checks if the given function might be the task scheduler
@@ -232,18 +233,21 @@ def identify_task_init(tbl_offset):
 
     while (tasks < MAX_TASKS):
 
-        ida_bytes.del_items(tbl_offset, 0,  struct_size)
+        ida_bytes.del_items(tbl_offset, 0, struct_size)
+
         ida_bytes.create_struct(tbl_offset, struct_size, struct_id)
 
         str_ptr = ida_struct.get_member_by_name(sptr, "task_name")
         str_offset = int.from_bytes(ida_bytes.get_bytes(
-            tbl_offset+str_ptr.soff, 4), "little")
+            tbl_offset + str_ptr.soff, 4), "little")
+
         ida_bytes.create_strlit(str_offset, 0, ida_nalt.STRTYPE_C)
+
         task_name_str = idc.get_strlit_contents(str_offset)
 
         entry_ptr = ida_struct.get_member_by_name(sptr, "task_entry")
         entry_offset = int.from_bytes(ida_bytes.get_bytes(
-            tbl_offset+entry_ptr.soff, 4), "little")
+            tbl_offset + entry_ptr.soff, 4), "little")
 
         # break early if we met an undefined entry
         if (entry_offset == 0x0):
@@ -256,12 +260,14 @@ def identify_task_init(tbl_offset):
 
             idc.msg("[i] found task init for %s at %x\n" %
                     (str(task_name_str.decode()), task_entry_func_start))
-            ida_name.set_name(task_entry_func_start, "pal_TaskInit_"+str(
+
+            ida_name.set_name(task_entry_func_start, "pal_TaskInit_" + str(
                 task_name_str.decode()), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
 
         tbl_offset += struct_size
 
         tasks += 1
+
 
 #for debugging purpose export SHANNON_WORKFLOW="NO"
 if os.environ.get('SHANNON_WORKFLOW') == "NO":

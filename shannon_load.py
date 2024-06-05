@@ -47,7 +47,7 @@ def make_dbt():
             # make sure we start on-point
             offset = i.ea + str(i).find("DBT:")
 
-            ida_bytes.del_items(offset, 0,  struct_size)
+            ida_bytes.del_items(offset, 0, struct_size)
             ida_bytes.create_struct(offset, struct_size, struct_id)
 
 # validate if the file can be processed by the loader
@@ -91,13 +91,13 @@ def load_file(fd, neflags, format):
     idaapi.process_ui_action("msglist:Clear")
 
     idc.msg("\nIDA Pro 8.x+\n")
-    idc.msg('      /\ \                                                    '+"\n")
-    idc.msg('   ___\ \ \___      __       __      __     ___      __       '+"\n")
-    idc.msg('  /`,__| \  _ `\  /`__`\   /` _`\  /` _`\  / __`\  /` _`\     '+"\n")
-    idc.msg(' /\__, `\ \ \ \ \/\ \_\.\_/\ \/\ \/\ \/\ \/\ \_\ \/\ \/\ \    '+"\n")
-    idc.msg(' \/\____/\ \_\ \_\ \__/.\_\ \_\ \_\ \_\ \_\ \____/\ \_\ \_\   '+"\n")
-    idc.msg('  \/___/  \/_/\/_/\/__/\/_/\/_/\/_/\/_/\/_/\/___/  \/_/\/_/   '+"\n")
-    idc.msg('                                               Modem Loader   '+"\n\n")
+    idc.msg('      /\ \                                                    ' + "\n")
+    idc.msg('   ___\ \ \___      __       __      __     ___      __       ' + "\n")
+    idc.msg('  /`,__| \  _ `\  /`__`\   /` _`\  /` _`\  / __`\  /` _`\     ' + "\n")
+    idc.msg(' /\__, `\ \ \ \ \/\ \_\.\_/\ \/\ \/\ \/\ \/\ \_\ \/\ \/\ \    ' + "\n")
+    idc.msg(' \/\____/\ \_\ \_\ \__/.\_\ \_\ \_\ \_\ \_\ \____/\ \_\ \_\   ' + "\n")
+    idc.msg('  \/___/  \/_/\/_/\/__/\/_/\/_/\/_/\/_/\/_/\/___/  \/_/\/_/   ' + "\n")
+    idc.msg('                                               Modem Loader   ' + "\n\n")
     idc.msg("More: https://github.com/alexander-pick/shannon_modem_loader\n\n")
 
     start_offset = 0x20
@@ -118,8 +118,9 @@ def load_file(fd, neflags, format):
         seg_start = toc_info[2]
         seg_end = toc_info[2] + toc_info[3]
 
-        # these seem to be present mostly in older images 
+        # these seem to be present mostly in older images
         if (seg_name == "OFFSET" and seg_start == 0x0):
+            
             idc.msg("[i] found OFFSET, skipping\n")
             break
 
@@ -132,12 +133,13 @@ def load_file(fd, neflags, format):
         else:
             idc.set_segm_class(seg_start, "CODE")
 
-        idc.set_segm_name(seg_start, seg_name+"_file")
+        idc.set_segm_name(seg_start, seg_name + "_file")
 
-        fd.file2base(toc_info[1], seg_start, seg_end,  0)
+        fd.file2base(toc_info[1], seg_start, seg_end, 0)
 
         # set entry points of main and bootloader
         if (seg_name == "BOOT"):
+            
             idaapi.add_entry(seg_start, seg_start, "bootloader_entry", 1)
             idc.set_cmt(seg_start, "bootloader entry point", 1)
             ida_auto.auto_make_code(seg_start)
@@ -160,19 +162,20 @@ def load_file(fd, neflags, format):
 
             idaapi.add_entry(seg_start, seg_start, "reset", 1)
 
-            idaapi.add_entry(seg_start+4, seg_start+4, "undef_inst", 1)
+            idaapi.add_entry(seg_start + 4, seg_start + 4, "undef_inst", 1)
 
-            idaapi.add_entry(seg_start+8, seg_start+8, "soft_int", 1)
+            idaapi.add_entry(seg_start + 8, seg_start + 8, "soft_int", 1)
 
-            idaapi.add_entry(seg_start+12, seg_start+12, "prefetch_abort", 1)
+            idaapi.add_entry(seg_start + 12, seg_start +
+                             12, "prefetch_abort", 1)
 
-            idaapi.add_entry(seg_start+16, seg_start+16, "data_abort", 1)
+            idaapi.add_entry(seg_start + 16, seg_start + 16, "data_abort", 1)
 
-            ida_name.set_name(seg_start+20, "reserved_1", ida_name.SN_NOCHECK)
+            ida_name.set_name(seg_start + 20, "reserved_1", ida_name.SN_NOCHECK)
 
-            idaapi.add_entry(seg_start+24, seg_start+24, "irq", 1)
+            idaapi.add_entry(seg_start + 24, seg_start + 24, "irq", 1)
 
-            ida_name.set_name(seg_start+28, "reserved_2", ida_name.SN_NOCHECK)
+            ida_name.set_name(seg_start + 28, "reserved_2", ida_name.SN_NOCHECK)
 
         start_offset += 0x20
 

@@ -62,7 +62,7 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
         shannon_names.restore_ss_names()
         shannon_names.restore_cpp_names()
-        self.create_long_strings()        
+        self.create_long_strings()
 
         for s in idautils.Segments():
 
@@ -77,23 +77,29 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
             if (seg_name == "MAIN_file"):
 
                 shannon_generic.get_ref_set_name(seg_start, "reset_v")
-                shannon_generic.get_ref_set_name(seg_start+4, "undef_inst_v")
-                shannon_generic.get_ref_set_name(seg_start+8, "soft_int_v")
-                shannon_generic.get_ref_set_name(seg_start+12, "prefetch_abort_v")
-                shannon_generic.get_ref_set_name(seg_start+16, "data_abort_v")
-                shannon_generic.get_ref_set_name(seg_start+24, "irq_v")
+
+                shannon_generic.get_ref_set_name(seg_start + 4, "undef_inst_v")
+
+                shannon_generic.get_ref_set_name(seg_start + 8, "soft_int_v")
+
+                shannon_generic.get_ref_set_name(seg_start + 12, "prefetch_abort_v")
+
+                shannon_generic.get_ref_set_name(seg_start + 16, "data_abort_v")
+
+                shannon_generic.get_ref_set_name(seg_start + 24, "irq_v")
 
                 self.memory_ranges()
 
                 shannon_mpu.find_hw_init()
-                
+
                 shannon_scatterload.find_scatter()
 
         # remove "please wait ..." box and display runtime in log
         idaapi.hide_wait_box()
 
-        timediff = time.process_time()- start_time
-        idc.msg("[i] post-processing runtime %d minutes and %d seconds\n" % ((timediff / 60), (timediff % 60)))
+        timediff = time.process_time() - start_time
+        idc.msg("[i] post-processing runtime %d minutes and %d seconds\n" %
+                ((timediff / 60), (timediff % 60)))
 
         for s in idautils.Segments():
 
@@ -171,6 +177,7 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         shannon_generic.add_memory_segment(0xEC000000, 0x0000FFFF, "GLINK")
 
         #shannon_generic.add_memory_segment(0xF0000000, 0x0FFFFFFF, "unknown_8")
+
 
 idb_hooks = idb_finalize_hooks_t()
 idb_hooks.hook()
