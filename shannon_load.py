@@ -120,10 +120,11 @@ def load_file(fd, neflags, format):
 
         # these seem to be present mostly in older images 
         if (seg_name == "OFFSET" and seg_start == 0x0):
-            idc.msg("[i] found offset entry, skipping")
+            idc.msg("[i] found offset entry, skipping\n")
             break
 
         # map slices to segments
+        idc.msg("[i] adding %s\n" % seg_name)
         idc.AddSeg(seg_start, seg_end, 0, 1, idaapi.saRel32Bytes, idaapi.scPub)
 
         if ("NV" in seg_name):
