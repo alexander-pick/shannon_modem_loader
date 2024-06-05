@@ -218,12 +218,22 @@ def process_scattertbl(scatter_start, scatter_size, ops):
             if (entry[3] == op):
                 # if it does, at which index of the op list?
                 match index:
-                    # case 0:
-                    #     idc.msg("[d] scatter_null\n")
-                    #     # ignore this for now
-                    # case 1:
-                    #     idc.msg("[d] scatter_zero\n")
-                    #     # let's ignore that for now
+                    case 0:
+                        # idc.msg("[d] scatter_null\n")
+                    
+                        # just adding these won't invaldiate any data in it, but allows us to see what
+                        # was supposed to be mapped or zerored out 
+                        if (entry[2] > 0):
+                            shannon_generic.add_memory_segment(entry[1], entry[2],
+                                                               "SCATTERNULL_" + str(scatter_id),
+                                                               "CODE", False)
+                    case 1:
+                        # idc.msg("[d] scatter_zero\n")
+                    
+                        if (entry[2] > 0):
+                            shannon_generic.add_memory_segment(entry[1], entry[2],
+                                                               "SCATTERZERO_" + str(scatter_id),
+                                                               "CODE", False)
                     case 2:
 
                         # idc.msg("[d] scatter_copy\n")
