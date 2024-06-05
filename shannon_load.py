@@ -120,7 +120,7 @@ def load_file(fd, neflags, format):
 
         # these seem to be present mostly in older images 
         if (seg_name == "OFFSET" and seg_start == 0x0):
-            idc.msg("[i] found offset entry, skipping\n")
+            idc.msg("[i] found OFFSET, skipping\n")
             break
 
         # map slices to segments

@@ -12,6 +12,7 @@ import ida_ua
 import ida_name
 import idautils
 import ida_idp
+import ida_nalt
 # import ida_funcs
 # import ida_auto
 
@@ -100,7 +101,15 @@ def function_find_name(name):
 def resolve_ref(str_addr):
 
     name = None
-    str_offset = int.from_bytes(ida_bytes.get_bytes(str_addr, 4), "little")
+
+    bytes = ida_bytes.get_bytes(str_addr, 4)
+
+    # bailout - hardly happens, only with some rare oddly formated input files
+    if(bytes == None):
+        idc.msg("[e] cannot resolve string reference at %x\n" % str_addr)
+        return None
+
+    str_offset = int.from_bytes(bytes, "little")
     # idc.msg("[d] %x: fallback ref\n" % str_offset)
 
     name = idc.get_strlit_contents(str_offset)
@@ -219,6 +228,26 @@ def get_metric(bl_target):
 
     return [loops, branch, length, flow_size, xrefs, ldr, calls]
 
+# print metrics from get_metrics() for dbg reasons
 def print_metrics(addr, metrics):
     idc.msg("[d] %x: loops: %d branch: %d length: %d basic blocks: %d xrefs: %d ldr: %d calls: %d\n" % (
         addr, len(metrics[0]), len(metrics[1]), metrics[2], metrics[3], len(metrics[4]), len(metrics[5]), len(metrics[6])))
+
+# rolled a own txt search based on bin search here, I wasn't happy with 
+# how ida_search.find_text() works for my usecase - moar performance
+def search_text(start_ea, end_ea, text):
+    
+    patterns = ida_bytes.compiled_binpat_vec_t()
+    encoding = ida_nalt.get_default_encoding_idx(ida_nalt.BPU_1B)
+    
+    if text.find('"') < 0:
+        text = '"%s"' % text
+    
+    err = ida_bytes.parse_binpat_str(patterns, start_ea, text, 10, encoding)
+    
+    if(not err):
+        ea = ida_bytes.bin_search(start_ea, end_ea, patterns, ida_bytes.BIN_SEARCH_FORWARD | ida_bytes.BIN_SEARCH_NOBREAK | ida_bytes.BIN_SEARCH_NOSHOW)
+                
+        return ea
+
+    return idaapi.BADADDR

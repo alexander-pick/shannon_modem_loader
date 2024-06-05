@@ -338,6 +338,7 @@ def find_scatter():
                                 scatterload = process_scatterload(
                                     reset_func_cur)
                                 create_scatter_tbl(scatterload)
+                                return
 
                             # abort if nothing was found
                             if (reset_func_cur >= reset_func_end):

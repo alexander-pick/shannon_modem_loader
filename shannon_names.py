@@ -44,8 +44,7 @@ def restore_ss_names():
     seg_start = seg_t.start_ea
     seg_end = seg_t.end_ea - seg_t.start_ea
 
-    ss_offset = ida_search.find_text(
-        seg_start, seg_end, 0, "ss_DecodeGmmFacilityMsg", ida_search.SEARCH_DOWN)
+    ss_offset = shannon_generic.search_text(seg_start, seg_end, "ss_DecodeGmmFacilityMsg")
 
     if (ss_offset != idaapi.BADADDR):
         # step 2 - find xrefs to this name, essentially should be just one xref

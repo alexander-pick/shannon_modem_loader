@@ -21,7 +21,7 @@ def find_hw_init():
 
     idc.msg("[i] trying to find hw_init() and rebuild mpu\n")
 
-    regex = "Invalid warm boot!!"
+    text = "Invalid warm boot!!"
 
     # search only in main to avoid unnecessary long runtimes
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
@@ -32,8 +32,7 @@ def find_hw_init():
         idc.msg("[e] cannot find MAIN_file boundaries\n")
         return 
 
-    offset = ida_search.find_text(
-        seg_start, seg_end, 0, regex, ida_search.SEARCH_DOWN)
+    offset = shannon_generic.search_text(seg_start, seg_end, text)
 
     if (offset != idaapi.BADADDR):
 

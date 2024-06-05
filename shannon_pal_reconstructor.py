@@ -32,8 +32,7 @@ def find_basic_pal_functions():
     seg_start = seg_t.start_ea
     seg_end = seg_t.end_ea - seg_t.start_ea
 
-    pal_MsgSendTo_addr = ida_search.find_text(
-        seg_start, seg_end, 0, "PAL_MSG_MAX_ENTITY_COUNT", ida_search.SEARCH_DOWN)
+    pal_MsgSendTo_addr = shannon_generic.search_text(seg_start, seg_end, "PAL_MSG_MAX_ENTITY_COUNT")
 
     # step 1 - find pal_MsgSendTo()
     if (pal_MsgSendTo_addr != idaapi.BADADDR):
