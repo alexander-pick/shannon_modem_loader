@@ -118,6 +118,11 @@ def load_file(fd, neflags, format):
         seg_start = toc_info[2]
         seg_end = toc_info[2] + toc_info[3]
 
+        # these seem to be present mostly in older images 
+        if (seg_name == "OFFSET" and seg_start == 0x0):
+            idc.msg("[i] found offset entry, skipping")
+            break
+
         # map slices to segments
         idc.AddSeg(seg_start, seg_end, 0, 1, idaapi.saRel32Bytes, idaapi.scPub)
 
