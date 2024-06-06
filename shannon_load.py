@@ -67,6 +67,8 @@ def accept_file(fd, fname):
 
 # required IDA Pro load file function
 def load_file(fd, neflags, format):
+    
+    tensor = False
 
     idaapi.set_processor_type(
         "arm:ARMv7-A&R", ida_idp.SETPROC_LOADER_NON_FATAL)
@@ -124,6 +126,15 @@ def load_file(fd, neflags, format):
             idc.msg("[i] found OFFSET, skipping\n")
             break
 
+        if (seg_name == "GVERSION" and seg_start == 0x0):
+
+            idc.msg("[i] found GVERSION, this is Tensor land\n")
+            idaapi.set_processor_type("arm:ARMv8", ida_idp.SETPROC_LOADER_NON_FATAL)
+            
+            tensor = True
+            
+            break
+        
         # map slices to segments
         idc.msg("[i] adding %s\n" % seg_name)
         idc.AddSeg(seg_start, seg_end, 0, 1, idaapi.saRel32Bytes, idaapi.scPub)
@@ -166,8 +177,7 @@ def load_file(fd, neflags, format):
 
             idaapi.add_entry(seg_start + 8, seg_start + 8, "soft_int", 1)
 
-            idaapi.add_entry(seg_start + 12, seg_start +
-                             12, "prefetch_abort", 1)
+            idaapi.add_entry(seg_start + 12, seg_start +12, "prefetch_abort", 1)
 
             idaapi.add_entry(seg_start + 16, seg_start + 16, "data_abort", 1)
 
@@ -175,26 +185,28 @@ def load_file(fd, neflags, format):
 
             idaapi.add_entry(seg_start + 24, seg_start + 24, "irq", 1)
 
-            ida_name.set_name(seg_start + 28, "reserved_2", ida_name.SN_NOCHECK)
+            idaapi.add_entry(seg_start + 28, seg_start + 28, "fiq", 1)
 
         start_offset += 0x20
 
     shannon_structs.add_dbt_struct()
-    shannon_structs.add_scatter_struct()
-    shannon_structs.add_mpu_region_struct()
-    shannon_structs.add_task_struct()
-
+    
     # needs to be done very early
     make_dbt()
 
-    # These 3 lines were awarded the most ugliest hack award 2024, runs a script which scheudles a callback without
-    # beeing unloaded with the loader.
+    if(not tensor):
+        shannon_structs.add_scatter_struct()
+        shannon_structs.add_mpu_region_struct()
+        shannon_structs.add_task_struct()
 
-    rv = ida_expr.idc_value_t()
-    idc_line = 'RunPythonStatement("exec(open(\'' + idaapi.idadir(
-        "python") + '/shannon_postprocess.py\').read())")'
-    ida_expr.eval_idc_expr(rv, idaapi.BADADDR, idc_line)
+        # These 3 lines were awarded the most ugliest hack award 2024, runs a script which scheudles a callback without
+        # beeing unloaded with the loader.
 
-    idc.msg("[i] loader done, starting auto analysis\n")
+        rv = ida_expr.idc_value_t()
+        idc_line = 'RunPythonStatement("exec(open(\'' + idaapi.idadir(
+            "python") + '/shannon_postprocess.py\').read())")'
+        ida_expr.eval_idc_expr(rv, idaapi.BADADDR, idc_line)
+
+        idc.msg("[i] loader done, starting auto analysis\n")
 
     return 1

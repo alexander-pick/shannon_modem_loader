@@ -12,7 +12,7 @@ import ida_name
 import ida_ua
 import ida_struct
 import ida_nalt
-import ida_search
+#import ida_search
 import ida_segment
 
 import shannon_generic

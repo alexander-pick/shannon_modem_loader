@@ -8,7 +8,6 @@ import idc
 import idaapi
 import ida_name
 import ida_ua
-import ida_search
 import ida_segment
 import ida_bytes
 import ida_struct

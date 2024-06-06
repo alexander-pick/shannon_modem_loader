@@ -122,6 +122,22 @@ def resolve_ref(str_addr):
         return name
     else:
         return None
+    
+# creates strings which are at least 12 bytes long
+def create_long_strings():
+
+    idc.msg("[i] creating long strings\n")
+
+    strings = idautils.Strings()
+
+    strings.setup(strtypes=[ida_nalt.STRTYPE_C], ignore_instructions=True, minlen=12)
+
+    strings.refresh()
+
+    for s in strings:
+        # sanity check, is unknown bytes?
+        if (idc.is_unknown(idc.get_full_flags(s.ea))):
+            ida_bytes.create_strlit(s.ea, 0, ida_nalt.STRTYPE_TERMCHR)
 
 # I am using some metrics of the function for analysis instead of pattern since
 # we have a limited number of candidates and highly optimized code which will

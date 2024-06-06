@@ -28,23 +28,6 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
     def __init__(self):
         ida_idp.IDB_Hooks.__init__(self)
 
-    # creates strings which are at least 12 bytes long
-    def create_long_strings(self):
-
-        idc.msg("[i] creating long strings\n")
-
-        strings = idautils.Strings()
-
-        strings.setup(strtypes=[ida_nalt.STRTYPE_C],
-                      ignore_instructions=True, minlen=12)
-
-        strings.refresh()
-
-        for s in strings:
-            # sanity check, is unknown bytes?
-            if (idc.is_unknown(idc.get_full_flags(s.ea))):
-                ida_bytes.create_strlit(s.ea, 0, ida_nalt.STRTYPE_TERMCHR)
-
     # ida's standard post processing callback
     def auto_empty_finally(self):
 
@@ -62,7 +45,7 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
         shannon_names.restore_ss_names()
         shannon_names.restore_cpp_names()
-        self.create_long_strings()
+        shannon_generic.create_long_strings()
 
         for s in idautils.Segments():
 
@@ -85,8 +68,12 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
                 shannon_generic.get_ref_set_name(seg_start + 12, "prefetch_abort_v")
 
                 shannon_generic.get_ref_set_name(seg_start + 16, "data_abort_v")
+                
+                shannon_generic.get_ref_set_name(seg_start + 20, "reserved_v")
 
                 shannon_generic.get_ref_set_name(seg_start + 24, "irq_v")
+                
+                shannon_generic.get_ref_set_name(seg_start + 28, "fiq_v")
 
                 self.memory_ranges()
 
