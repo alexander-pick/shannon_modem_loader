@@ -24,14 +24,13 @@ def find_hw_init():
 
     # search only in main to avoid unnecessary long runtimes
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
-    seg_start = seg_t.start_ea
-    seg_end = seg_t.end_ea - seg_t.start_ea
 
-    if (seg_end == idaapi.BADADDR):
+    if (seg_t.end_ea == idaapi.BADADDR):
         idc.msg("[e] cannot find MAIN_file boundaries\n")
         return
 
-    offset = shannon_generic.search_text(seg_start, seg_end, text)
+    offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, text)
+    offset = shannon_generic.get_first_ref(offset)
 
     if (offset != idaapi.BADADDR):
 

@@ -1,6 +1,6 @@
 #!/bin/python3
 
-# Samsung Shannon Modem Loader - Postprocessor
+# Samsung Shannon Modem Loader - Tensor Postprocessor
 # This script is autoamtically scheduled by the loader
 # Alexander Pick 2024
 

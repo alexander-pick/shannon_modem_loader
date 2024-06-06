@@ -122,7 +122,20 @@ def resolve_ref(str_addr):
         return name
     else:
         return None
-    
+
+# get first xref to string from a defined function
+def get_first_ref(ea):
+    for xref in idautils.XrefsTo(ea, 0):
+        
+        # check if is in defined function:
+        func_start = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
+        func_end = idc.get_func_attr(xref.frm, idc.FUNCATTR_END)
+        
+        if(func_start != idaapi.BADADDR and func_end != idaapi.BADADDR):
+            return xref.frm
+   
+    return idaapi.BADADDR
+   
 # creates strings which are at least 12 bytes long
 def create_long_strings():
 
@@ -270,8 +283,13 @@ def search_text(start_ea, end_ea, text):
 
     if (not err):
         
+        #idc.msg("[d] searching for %s from %x to %x\n" % (text, start_ea, end_ea))
+                
         ea = ida_bytes.bin_search(start_ea, end_ea, patterns, ida_bytes.BIN_SEARCH_FORWARD |
                                   ida_bytes.BIN_SEARCH_NOBREAK | ida_bytes.BIN_SEARCH_NOSHOW)
+
+        # stupid hack to get beginning of the string in case we found a substring
+        ea = idc.prev_head(idc.next_head(ea))
 
         return ea
 

@@ -29,26 +29,24 @@ def find_basic_pal_functions():
 
     # search only in main to avoid unnecessary long runtimes
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
-    seg_start = seg_t.start_ea
-    seg_end = seg_t.end_ea - seg_t.start_ea
 
     pal_MsgSendTo_addr = shannon_generic.search_text(
-        seg_start, seg_end, "PAL_MSG_MAX_ENTITY_COUNT")
-
+        seg_t.start_ea, seg_t.end_ea, "PAL_MSG_MAX_ENTITY_COUNT")
+        
     # step 1 - find pal_MsgSendTo()
     if (pal_MsgSendTo_addr != idaapi.BADADDR):
-
+        
         # realign if we are off by one here due to thumb and stuff
         if (pal_MsgSendTo_addr % 4):
             pal_MsgSendTo_addr += 1
-
+            
         # most images have 2 xrefs to this string, ones is MsgSendTo
         for xref in idautils.XrefsTo(pal_MsgSendTo_addr, 0):
 
             func_start = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
 
             num_xrefs = len(list(idautils.XrefsTo(func_start, 0)))
-
+            
             # pal_MsgSendTo has a lot of xrefs to itself, other candidate funcs don't have that
             if (num_xrefs > 15):
 
