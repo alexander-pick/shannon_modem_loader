@@ -11,26 +11,44 @@ import ida_ua
 import ida_segment
 import ida_bytes
 import ida_struct
+import idautils
 
 import shannon_generic
+import shannon_funcs
 
 import os
 
+def get_segment_boundaries(seg_name="MAIN_file"):
+        
+    seg_t = ida_segment.get_segm_by_name(seg_name)
 
+    if (seg_t.end_ea == idaapi.BADADDR):
+        idc.msg("[e] cannot find "+seg_name+" boundaries\n")
+        return None
+    
+    return seg_t
 
+# find the hardware init function
 def find_hw_init():
 
     idc.msg("[i] trying to find hw_init() and rebuild mpu\n")
 
     # search only in main to avoid unnecessary long runtimes
-    seg_t = ida_segment.get_segm_by_name("MAIN_file")
+    seg_t = get_segment_boundaries()
 
-    if (seg_t.end_ea == idaapi.BADADDR):
-        idc.msg("[e] cannot find MAIN_file boundaries\n")
+    if(seg_t == None):
         return
 
-    offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "Invalid warm boot!!")
+    offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "Invalid warm boot")
     offset = shannon_generic.get_first_ref(offset)
+
+    idc.msg("[d] find_hw_init() offset pre: %x\n" % offset)
+
+    if (offset != idaapi.BADADDR):
+        if (shannon_funcs.function_find_boundaries(offset)):
+            offset = idc.get_func_attr(offset, idc.FUNCATTR_START)
+
+    idc.msg("[d] find_hw_init() offset: %x\n" % offset)
 
     if (offset != idaapi.BADADDR):
 
@@ -71,10 +89,80 @@ def find_hw_init():
                 #idc.msg("[d] possible mpu function: %x\n" % candidate)
                 validate_mpu_candidate(candidate)
     else:
-        idc.msg("[i] mpu identifier fallback\n")
-        # TODO
+        idc.msg("[i] failed to identify hw_init()\n")
 
-found_hw_exception_handler = 0
+# this tries to find the MRC opcodes required for setting up the MMU
+# we are looking for a write to SCTLR
+def validate_mmu_candidate(bl_target):
+    
+    func_start = idc.get_func_attr(bl_target, idc.FUNCATTR_START)
+    func_end = idc.get_func_attr(bl_target, idc.FUNCATTR_END)
+    
+    addr = func_start
+    
+    if(func_start != idaapi.BADADDR):
+        
+        while(addr <= func_end):
+                        
+            # First opcode is an MRC 
+            opcode = ida_ua.ua_mnem(addr)
+            
+            if(opcode == None):
+                addr = idc.next_head(addr)
+                continue
+            
+            # SCTLR (c1, c0, 0) - System Control Register - core system controls <- want this
+            # ACTLR (c1, c0, 1) - Auxiliary Control Register - coprocessor optimizations
+            # CPACR (c1, c0, 2) - Coprocessor Access Control Register - access perm, FPU, NEON
+            # NSACR (c1, c0, 7) - Non-Secure Access Control Register
+
+            # MCR p15, 0, R0, c2, c0, 2 
+            # -> Write to CP15 - Operand Num (normally 0), Source Reg CPU, Coproc Num, Coproc Reg, Reg Offset
+            # c2 is translation table
+            
+            # MCR p15, 0, R1, c3, c0, 0 
+
+            # MCR - write
+            # MRC - read
+            if ("MCR" in opcode):
+                
+                # workaround since get_oeprand_value does not work    
+                t = idaapi.generate_disasm_line(addr)
+                if(t):
+                                        
+                    operands_str = idaapi.tag_remove(t)
+                    operands = operands_str.replace(",", "").split()
+                                        
+                    # CP15, the system control coprocessor is adressed
+                    if("p15" in operands[1]):
+                        
+                        # c2, c0 
+                        if("c2c0" in operands[3] and operands[4] == "0"):
+                            
+                            idc.msg("[i] TTBR0 setup at %x\n" % (addr))
+                            idc.msg("[d] %s\n" % (operands_str))
+
+                        if("c2c0" in operands[3] and operands[4] == "1"):
+                            
+                            idc.msg("[i] TTBR1 setup at %x\n" % (addr))
+                            idc.msg("[d] %s\n" % (operands_str))
+                            
+            addr = idc.next_head(addr)
+
+    return
+
+# find all MRC with write to CP15 etc.
+def scan_for_mrc():
+        
+    seg_t = get_segment_boundaries()
+    
+    if(seg_t == None):
+        return
+        
+    for ea in idautils.Functions(seg_t.start_ea, seg_t.end_ea):
+        validate_mmu_candidate(ea)
+
+    idc.msg("[d] scan done\n")
 
 # check if we found the mpu table
 def validate_mpu_candidate(bl_target):
@@ -100,8 +188,8 @@ def validate_mpu_candidate(bl_target):
     # false
     # loops: 2 branch: 5 length: 74 basic blocks: 10 xrefs: 1 ldr: 14 calls: 9
 
-    if ((len(metrics[0]) > 0 and len(metrics[0]) < 3) and metrics[3] > 4 and (metrics[2] > 24 and metrics[2] < 72) 
-        and len(metrics[4]) == 1 and len(metrics[6]) > 5 and (len(metrics[5]) > 5)):
+    if ((len(metrics[0]) > 0 and len(metrics[0]) < 3) and metrics[3] > 4 and (metrics[2] > 24 and metrics[2] < 72)
+            and len(metrics[4]) == 1 and len(metrics[6]) > 5 and (len(metrics[5]) > 5)):
 
         if (process_mpu_table(metrics[5])):
             # @tocheck: if any false positive occures, need to valdiate branches for calls to enable/disable
@@ -110,7 +198,6 @@ def validate_mpu_candidate(bl_target):
 
     # if there are 250+ refs to the candidate function it is the exception handler or get_chip_name
     if (len(metrics[4]) > 250 and (metrics[2] > 24 and metrics[2] < 80)):
-        found_hw_exception_handler = 1
         idc.msg("[i] hw_SwExceptionHandler(): %x\n" % bl_target)
         ida_name.set_name(bl_target, " hw_SwExceptionHandler", ida_name.SN_NOCHECK)
 
@@ -195,3 +282,5 @@ def process_mpu_table(tbl_candidates):
 if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running mpu in standalone mode\n")
     find_hw_init()
+
+#scan_for_mrc()

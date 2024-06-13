@@ -258,10 +258,10 @@ def process_scattertbl(scatter_start, scatter_size, ops):
                                                            "SCATCOMP_" + str(scatter_id),
                                                            "CODE", False)
 
-                        idaapi.put_bytes(entry[1], chunk)
+                        idaapi.patch_bytes(entry[1], chunk)
 
-                        idc.msg("[i] decompressed %d bytes of %d, from %x to %x\n"
-                                % (len(chunk), entry[2], entry[0], entry[1]))
+                        idc.msg("[i] decompressed %d bytes, from %x to %x\n"
+                                % (len(chunk), entry[0], entry[1]))
 
             index += 1
         scatter_id += 1
@@ -475,7 +475,7 @@ def scatterload_decompress(src, cnt):
                 
                 # buffer max bailout
                 if(dst_index >= cnt):
-                    #idc.msg("[d] out of bound write to %x/%x\n" % (cnt, dst_index))
+                    #idc.msg("[d] out of bound write to %x/%x/%x\n" % (cnt, dst_index, src_index))
                     return bytes(list(output_buffer))
 
                 if (dst_index >= len(output_buffer)):
@@ -483,11 +483,11 @@ def scatterload_decompress(src, cnt):
 
                 # some possible error conditions
                 if(src_ptr > cnt):
-                    #idc.msg("[d] out of bound read to %x/%x\n" % (cnt, src_ptr))
+                    #idc.msg("[d] out of bound read to %x/%x/%x\n" % (cnt, src_ptr, src_index))
                     return bytes(list(output_buffer))
                 
                 if(src_ptr < 0):
-                    #idc.msg("[d] negativ read %x\n" % (src_ptr))
+                    #idc.msg("[d] negativ read %x/%x\n" % (src_ptr, src_index))
                     return bytes(list(output_buffer))
 
                 # copy byte from previously decompressed data to the current destination

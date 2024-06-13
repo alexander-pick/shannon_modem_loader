@@ -18,6 +18,7 @@ import re
 import os
 
 import shannon_generic
+import shannon_funcs
 
 def restore_cpp_names():
 
@@ -143,7 +144,7 @@ def restore_ss_names():
 
                     if (len(func_name_str) > 8):
                         idaapi.set_name(
-                            func_start, shannon_generic.function_find_name(func_name_str))
+                            func_start, shannon_funcs.function_find_name(func_name_str))
                     else:
                         idc.msg("[e] %x: function name too short: %s" %
                                 (func_start, func_name_str))
@@ -164,7 +165,7 @@ def restore_ss_names():
                             ida_funcs.add_func(
                                 prev_offset, idc.prev_head(str_addr))
                             idaapi.set_name(
-                                prev_offset, shannon_generic.function_find_name(func_name_str))
+                                prev_offset, shannon_funcs.function_find_name(func_name_str))
 
 
 #for debugging purpose export SHANNON_WORKFLOW="NO"

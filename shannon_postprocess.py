@@ -27,123 +27,6 @@ import shannon_scatterload
 import shannon_debug_traces
 import shannon_names
 
-# finds the end of the function based on the call to the failed stack 
-# validation
-def detect_tail(addr, stack_err):
-            
-    while(1):
-        
-        addr = idc.next_head(addr)
-        opcode = ida_ua.ua_mnem(addr)
-        
-        # sanity checks / bailout conditions
-        
-        # not defined opcode
-        if(opcode == None):
-            break
-        
-        # found no code
-        if(not idc.is_code(idc.get_full_flags(addr))):
-            break
-        
-        # found code belonging to a function
-        if(not idc.get_func_attr(addr, idc.FUNCATTR_START) == idaapi.BADADDR):
-            break
-        
-        if("BL" in opcode):
-            operand = idc.get_operand_value(addr, 0)
-        
-            if(operand != None):
-        
-                if(operand == stack_err):
-                    paddr = idc.prev_head(addr)
-                    opcode = ida_ua.ua_mnem(paddr)
-        
-                    if(opcode == None):
-                        break
-        
-                    if("POP" in opcode):
-                        return paddr
-                    else:
-                        addr = idc.next_head(addr)
-                        continue
-            
-    return None
-
-# this fixes badly aligned functions in newer BB versions 
-# some of them get combined by AA because of the stack protection
-def split_functions(): 
-    stack_err = idc.get_name_ea_simple("stack_err")
-    for xref in idautils.XrefsTo(stack_err,  0):
-        prev_head = idc.prev_head(xref.frm)
-        opcode = ida_ua.ua_mnem(prev_head)
-        
-        if(opcode == None):
-            continue
-        
-        if("POP" in opcode):
-            
-            func_start = idc.get_func_attr(prev_head, idc.FUNCATTR_START)
-            func_end = idc.get_func_attr(prev_head, idc.FUNCATTR_END)
-            
-            func_o = ida_funcs.get_func(func_start)
-
-            if func_o is not None:
-                if(func_o.end_ea != prev_head or func_o.end_ea != xref.frm):
-                    idc.msg("[d] differing boundaries for function at %x, setting end to %x, was %x\n" % (func_start, prev_head, func_end))
-                    func_o.end_ea = prev_head
-                    ida_funcs.update_func(func_o)
-                    ida_funcs.reanalyze_function(func_o)
-                    ida_auto.auto_wait()    
-
-# adds not yet defined functions which failed in AA due to stack protection
-# functionality for very new BB images. IDA gets confused by the non returning
-# tail which ends in an error handler. We use the error handler as reference
-# to proper define the functions AA cannot define.
-def scan_main():
-    
-    # do some cleanup first
-    #split_functions()
-    
-    stack_err = idc.get_name_ea_simple("stack_err")
-    
-    seg_t = ida_segment.get_segm_by_name("MAIN_file")
-    
-    addr = seg_t.start_ea
-    
-    while(addr < seg_t.end_ea):
-        #is offset code?"
-        if(idc.is_code(idc.get_full_flags(addr))):
-            
-            # this simply prevents that we define a check fail as function start
-            opcode = ida_ua.ua_mnem(addr)
-            
-            if(opcode == None):
-                continue
-            
-            if("BL" in opcode):
-                operand = idc.get_operand_value(addr, 0)
-                
-                if(operand != None):
-                
-                    if(operand == stack_err):
-                        addr = idc.next_head(addr)
-                        continue
-
-            # offset is part of a function?
-            if(idc.get_func_attr(addr, idc.FUNCATTR_START) == idaapi.BADADDR):
-                # check if we can find a stack check fail tail
-                tail_offset = detect_tail(addr,stack_err)
-            
-                if(tail_offset != None):
-                    
-                    # avoid defining the tail as own functions
-                    if(addr != tail_offset):
-                        ida_funcs.add_func(addr, tail_offset)                    
-                        idc.msg("[d] found a function %x-%x\n" % (addr, tail_offset))
-                    
-        addr = idc.next_head(addr)
-
 # identify the non returning function which belongs to the stack protection, if it exists
 # we deal with a very new BB - like 5G new.
 def find_cookie_monster():
@@ -185,14 +68,12 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         shannon_debug_traces.make_dbt_refs()
         
         find_cookie_monster()
-        #scan_main()
         
         shannon_pal_reconstructor.find_basic_pal_functions()
 
         shannon_names.restore_ss_names()
         shannon_names.restore_cpp_names()
         shannon_generic.create_long_strings()
-        
 
         for s in idautils.Segments():
 

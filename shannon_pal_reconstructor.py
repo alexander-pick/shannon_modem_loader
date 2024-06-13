@@ -12,10 +12,10 @@ import ida_name
 import ida_ua
 import ida_struct
 import ida_nalt
-#import ida_search
 import ida_segment
 
 import shannon_generic
+import shannon_funcs
 
 import os
 
@@ -149,6 +149,10 @@ def find_pal_init():
         idc.msg("[i] pal_Init xref: %x\n" % xref.frm)
 
         pal_init_addr = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
+        
+        if(pal_init_addr == idaapi.BADADDR):
+            if(shannon_funcs.function_find_boundaries(xref.frm)):
+                pal_init_addr = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
 
         idc.msg("[i] pal_Init(): %x\n" % pal_init_addr)
         ida_name.set_name(pal_init_addr, "pal_Init", ida_name.SN_NOCHECK)
@@ -207,6 +211,7 @@ def validate_if_task_scheduler(bl_target):
                 break
 
 # step 6 - find the second LDR in the function. It is the TaskDescTbl
+# TODO - only works for older modem versions, need fix for new
 def find_task_desc_tbl(task_func_start, task_func_end):
 
     task_func_cur = task_func_start
@@ -219,7 +224,7 @@ def find_task_desc_tbl(task_func_start, task_func_end):
         
         # skip text chunks inside function
         if(task_opcode == None):
-            idc.msg("[d] error finding pal_TaskDescTbl() at %x\n" % task_func_cur)
+            #idc.msg("[d] error finding pal_TaskDescTbl() at %x\n" % task_func_cur)
             continue
 
         if ("LDR" in task_opcode):

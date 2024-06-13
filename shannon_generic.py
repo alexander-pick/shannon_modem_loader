@@ -13,8 +13,8 @@ import ida_name
 import idautils
 import ida_idp
 import ida_nalt
-# import ida_funcs
-# import ida_auto
+
+import shannon_funcs
 
 # adds a memory segment to the database
 def add_memory_segment(seg_start, seg_size, seg_name, seg_type="DATA", sparse=True):
@@ -35,14 +35,16 @@ def add_memory_segment(seg_start, seg_size, seg_name, seg_type="DATA", sparse=Tr
                     idaapi.scPub, ida_segment.ADDSEG_SPARSE)
 
     idc.set_segm_class(seg_start, seg_type)
-    
-    if(seg_type == "CODE"):
+
+    if (seg_type == "CODE"):
         idc.set_segm_type(seg_start, idaapi.SEG_CODE)
-        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, ida_segment.SEGPERM_EXEC | ida_segment.SEGPERM_READ | ida_segment.SEGPERM_WRITE)
+        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, ida_segment.SEGPERM_EXEC |
+                          ida_segment.SEGPERM_READ | ida_segment.SEGPERM_WRITE)
     else:
         idc.set_segm_type(seg_start, idaapi.SEG_DATA)
-        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, ida_segment.SEGPERM_WRITE | ida_segment.SEGPERM_READ)
-    
+        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM,
+                          ida_segment.SEGPERM_WRITE | ida_segment.SEGPERM_READ)
+
     idc.set_segm_name(seg_start, seg_name)
 
     # make sure it is really STT_MM (sparse)
@@ -56,7 +58,7 @@ def create_name(ea, name):
 
         if (func_start != idaapi.BADADDR):
             if (len(name) > 8):
-                ida_name.set_name(func_start, function_find_name(
+                ida_name.set_name(func_start, shannon_funcs.function_find_name(
                     name), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
             else:
                 idc.msg("[e] %x: function name too short: %s\n" %
@@ -66,46 +68,17 @@ def create_name(ea, name):
 def get_ref_set_name(cur_ea, name):
 
     opcode = ida_ua.ua_mnem(cur_ea)
-    
+
     # idc.msg("[d] %x: %s -> %s\n" % (cur_ea, opcode, name))
     if (opcode == "LDR"):
         target_ref = idc.get_operand_value(cur_ea, 1)
         target = int.from_bytes(
             ida_bytes.get_bytes(target_ref, 4), "little")
         ida_name.set_name(target, name, ida_name.SN_NOCHECK)
-        
+
     if (opcode == "B"):
         target = idc.get_operand_value(cur_ea, 0)
         ida_name.set_name(target, name, ida_name.SN_NOCHECK)
-
-# check if name exists already inside the idb
-def function_exists(name):
-
-    for addr in idautils.Functions():
-
-        func_name = idc.get_func_name(addr)
-
-        if func_name == name:
-            return True
-
-    return False
-
-# deal with dupes in some modems
-def function_find_name(name):
-
-    postfix = 0
-    orig_name = name
-
-    while (function_exists(name) == True):
-        if (postfix > 0):
-            name = orig_name + "_" + str(postfix)
-        postfix += 1
-        # sanity check
-        if (postfix > 42):
-            break
-
-    # filter some bad chars before returning the string
-    return name.translate(dict.fromkeys(map(ord, u",~")))
 
 # resovles a string reference from offset
 def resolve_ref(str_addr):
@@ -133,16 +106,13 @@ def resolve_ref(str_addr):
 # get first xref to string from a defined function
 def get_first_ref(ea):
     for xref in idautils.XrefsTo(ea, 0):
-        
-        # check if is in defined function:
-        func_start = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
-        func_end = idc.get_func_attr(xref.frm, idc.FUNCATTR_END)
-        
-        if(func_start != idaapi.BADADDR and func_end != idaapi.BADADDR):
+
+        # validate the target is code
+        if (idc.is_code(idc.get_full_flags(xref.frm))):
             return xref.frm
-   
+
     return idaapi.BADADDR
-   
+
 # creates strings which are at least 11 bytes long
 def create_long_strings(length=11):
 
@@ -258,12 +228,12 @@ def get_metric(bl_target):
         function = idaapi.get_func(func_start)
 
         if (function != None):
-            
+
             flow_chart = idaapi.FlowChart(function)
             flow_size = flow_chart.size
-            
+
         else:
-            
+
             idc.msg("[e] error getting flowchart for function at %x" %
                     func_start)
 
@@ -289,9 +259,9 @@ def search_text(start_ea, end_ea, text):
     err = ida_bytes.parse_binpat_str(patterns, start_ea, text, 10, encoding)
 
     if (not err):
-        
+
         #idc.msg("[d] searching for %s from %x to %x\n" % (text, start_ea, end_ea))
-                
+
         ea = ida_bytes.bin_search(start_ea, end_ea, patterns, ida_bytes.BIN_SEARCH_FORWARD |
                                   ida_bytes.BIN_SEARCH_NOBREAK | ida_bytes.BIN_SEARCH_NOSHOW)
 
