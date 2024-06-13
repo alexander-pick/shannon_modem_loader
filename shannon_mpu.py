@@ -40,6 +40,11 @@ def find_hw_init():
         return
 
     offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "Invalid warm boot")
+    
+    if (offset == idaapi.BADADDR):
+        idc.msg("[e] hw_Init(): cannot find string\n")
+        return
+    
     offset = shannon_generic.get_first_ref(offset)
 
     # idc.msg("[d] find_hw_init() offset pre: %x\n" % offset)
