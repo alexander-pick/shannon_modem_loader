@@ -16,11 +16,11 @@ import shannon_generic
 
 import os
 
+
+
 def find_hw_init():
 
     idc.msg("[i] trying to find hw_init() and rebuild mpu\n")
-
-    text = "Invalid warm boot!!"
 
     # search only in main to avoid unnecessary long runtimes
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
@@ -29,7 +29,7 @@ def find_hw_init():
         idc.msg("[e] cannot find MAIN_file boundaries\n")
         return
 
-    offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, text)
+    offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "Invalid warm boot!!")
     offset = shannon_generic.get_first_ref(offset)
 
     if (offset != idaapi.BADADDR):
@@ -70,6 +70,11 @@ def find_hw_init():
             for candidate in candidates:
                 #idc.msg("[d] possible mpu function: %x\n" % candidate)
                 validate_mpu_candidate(candidate)
+    else:
+        idc.msg("[i] mpu identifier fallback\n")
+        # TODO
+
+found_hw_exception_handler = 0
 
 # check if we found the mpu table
 def validate_mpu_candidate(bl_target):
@@ -104,13 +109,15 @@ def validate_mpu_candidate(bl_target):
             ida_name.set_name(bl_target, " hw_MpuInit", ida_name.SN_NOCHECK)
 
     # if there are 250+ refs to the candidate function it is the exception handler or get_chip_name
-    if (len(metrics[4]) > 250 and metrics[2] > 24):
-        idc.msg("[i] hw_ExceptionHandler(): %x\n" % bl_target)
-        ida_name.set_name(bl_target, " hw_ExceptionHandler", ida_name.SN_NOCHECK)
+    if (len(metrics[4]) > 250 and (metrics[2] > 24 and metrics[2] < 80)):
+        found_hw_exception_handler = 1
+        idc.msg("[i] hw_SwExceptionHandler(): %x\n" % bl_target)
+        ida_name.set_name(bl_target, " hw_SwExceptionHandler", ida_name.SN_NOCHECK)
 
-    if (len(metrics[4]) > 200 and metrics[2] < 3):
-        idc.msg("[i] get_chip_name(): %x\n" % bl_target)
-        ida_name.set_name(bl_target, " get_chip_name", ida_name.SN_NOCHECK)
+    # commonly just an LDR but behaves wonky across versions, so disabled atm
+    # if (len(metrics[4]) > 200 and metrics[2] < 3):
+    #     idc.msg("[i] get_chip_name(): %x\n" % bl_target)
+    #     ida_name.set_name(bl_target, " get_chip_name", ida_name.SN_NOCHECK)
 
 def is_main_segment(addr):
 

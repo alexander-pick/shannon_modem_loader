@@ -25,28 +25,41 @@ import os
 # will be reconstructed and named which are quite important for future analysis
 def find_basic_pal_functions():
 
-    idc.msg("[i] trying to identify some important pal functions ands tasks\n")
+    idc.msg("[i] trying to identify some important pal functions and tasks\n")
 
     # search only in main to avoid unnecessary long runtimes
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
 
     pal_MsgSendTo_addr = shannon_generic.search_text(
         seg_t.start_ea, seg_t.end_ea, "PAL_MSG_MAX_ENTITY_COUNT")
-        
+    
+    if (pal_MsgSendTo_addr != idaapi.BADADDR):
+        # stupid hack to get beginning of the string since we found a substring
+        # the PAL_MSG_MAX_ENTITY_COUNT string varies between BB versions so the 
+        # search is for the most remarkable part only
+        pal_MsgSendTo_addr = idc.prev_head(idc.next_head(pal_MsgSendTo_addr))
+
+    # fallback for 5g versions which have the string slightly
+    # crippled between hi/lo reg, furthermore the PAL_MSG_MAX_ENTITY_COUNT
+    # string is in another function
+    if (pal_MsgSendTo_addr == idaapi.BADADDR):
+        pal_MsgSendTo_addr = shannon_generic.search_text(
+            seg_t.start_ea, seg_t.end_ea, "QUEUE_NAME")
+
     # step 1 - find pal_MsgSendTo()
     if (pal_MsgSendTo_addr != idaapi.BADADDR):
-        
+
         # realign if we are off by one here due to thumb and stuff
         if (pal_MsgSendTo_addr % 4):
             pal_MsgSendTo_addr += 1
-            
+
         # most images have 2 xrefs to this string, ones is MsgSendTo
         for xref in idautils.XrefsTo(pal_MsgSendTo_addr, 0):
 
             func_start = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
 
             num_xrefs = len(list(idautils.XrefsTo(func_start, 0)))
-            
+
             # pal_MsgSendTo has a lot of xrefs to itself, other candidate funcs don't have that
             if (num_xrefs > 15):
 
@@ -62,6 +75,8 @@ def find_basic_pal_functions():
 
         find_pal_msg_init(pal_MsgSendTo_addr)
 
+    find_pal_init()
+
 # try to find pal_MsgInit() and a few others along
 def find_pal_msg_init(pal_MsgSendTo_addr):
     # step2 - find pal_MsgInit()
@@ -70,9 +85,8 @@ def find_pal_msg_init(pal_MsgSendTo_addr):
         func_cnt = 1
         tbl_cnt = 1
         pal_MsgInit_addr = pal_MsgSendTo_addr
-        found_msg_init = False
 
-        while (func_cnt < 4):
+        while (func_cnt < 12):
 
             # get a candidate get_prev_func returns a func_t :S
             pal_MsgInit_addr_t = idaapi.get_prev_func(pal_MsgInit_addr)
@@ -82,6 +96,10 @@ def find_pal_msg_init(pal_MsgSendTo_addr):
 
             # check if second opcode of function is a BL
             opcode = ida_ua.ua_mnem(que_init_addr)
+
+            if (opcode == None):
+                idc.msg("[e] found no opcode at %x\n" % pal_MsgInit_addr)
+                continue
 
             # step3, find pal_QueInit to make sure we have the right parent function
             # A call to pal_QueInit is located directly after the reg save of pal_MsgInit
@@ -111,7 +129,6 @@ def find_pal_msg_init(pal_MsgSendTo_addr):
 
                     tbl_cnt += 1
 
-                found_msg_init = True
                 idc.msg("[i] pal_MsgInit(): %x\n" % pal_MsgInit_addr)
                 ida_name.set_name(pal_MsgInit_addr,
                                   "pal_MsgInit", ida_name.SN_NOCHECK)
@@ -120,31 +137,31 @@ def find_pal_msg_init(pal_MsgSendTo_addr):
 
             func_cnt += 1
 
-        # step 4 - find the parent of pal_MsgInit which is pal_Init
-        # pal_init is a nice starting point for everything since it is the startup
-        # of the interesting pal functionality
-        find_pal_init(found_msg_init, pal_MsgInit_addr)
-
 # try to find pal_Init()
-def find_pal_init(found_msg_init, pal_MsgInit_addr):
-    if (found_msg_init):
-        # step 3, find PAL init (there should be just one xref here)
-        for xref in idautils.XrefsTo(pal_MsgInit_addr, 0):
+def find_pal_init():
+    
+    seg_t = ida_segment.get_segm_by_name("MAIN_file")
+    
+    pal_init_addr = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "UpTimer Init")
+        
+    for xref in idautils.XrefsTo(pal_init_addr, 0):
+        
+        idc.msg("[i] pal_Init xref: %x\n" % xref.frm)
 
-            pal_init_addr = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
+        pal_init_addr = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
 
-            idc.msg("[i] pal_Init(): %x\n" % pal_init_addr)
-            ida_name.set_name(pal_init_addr, "pal_Init", ida_name.SN_NOCHECK)
+        idc.msg("[i] pal_Init(): %x\n" % pal_init_addr)
+        ida_name.set_name(pal_init_addr, "pal_Init", ida_name.SN_NOCHECK)
 
-            metrics = shannon_generic.get_metric(pal_init_addr)
-            #shannon_generic.print_metrics(pal_init_addr, metrics)
+        metrics = shannon_generic.get_metric(pal_init_addr)
+        #shannon_generic.print_metrics(pal_init_addr, metrics)
 
-            for branch in metrics[6]:
-                first_operand = idc.get_operand_value(branch, 0)
-                #idc.msg("[d] possible init function: %x\n" % branch)
-                validate_if_task_scheduler(first_operand)
-                #idc.msg("[d] possible dm_trace function: %x\n" % branch)
-                validate_if_dm_trace_log(first_operand)
+        for branch in metrics[6]:
+            first_operand = idc.get_operand_value(branch, 0)
+            #idc.msg("[d] possible init function: %x\n" % branch)
+            validate_if_task_scheduler(first_operand)
+            #idc.msg("[d] possible dm_trace function: %x\n" % branch)
+            validate_if_dm_trace_log(first_operand)
 
 def validate_if_dm_trace_log(bl_target):
 
@@ -199,6 +216,11 @@ def find_task_desc_tbl(task_func_start, task_func_end):
     while (1):
         task_func_cur = idc.next_head(task_func_cur)
         task_opcode = ida_ua.ua_mnem(task_func_cur)
+        
+        # skip text chunks inside function
+        if(task_opcode == None):
+            idc.msg("[d] error finding pal_TaskDescTbl() at %x\n" % task_func_cur)
+            continue
 
         if ("LDR" in task_opcode):
 

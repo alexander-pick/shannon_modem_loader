@@ -15,10 +15,12 @@ import ida_name
 import ida_expr
 import ida_struct
 import ida_kernwin
+import ida_segment
 
 import struct
 
 import shannon_structs
+import shannon_generic
 
 # This function will create DBT structs, DBT structs are debug references of various kind.
 # The head contains a type byte in position 4, this indicates if a structure is a direct
@@ -68,13 +70,15 @@ def accept_file(fd, fname):
 # required IDA Pro load file function
 def load_file(fd, neflags, format):
     
-    tensor = False
+    version_string = None
 
-    idaapi.set_processor_type(
-        "arm:ARMv7-A&R", ida_idp.SETPROC_LOADER_NON_FATAL)
+    # Old Exynos are ARMv7 (Exynos 3/4/5), old Shannon was Cortex R7, newer are R8. 
+    # New Exynos are all ARMv8+, but Shannon seems to be still running on a A or R core with ARMv7 ISA.
+    # Tensor's Modem seems to be ARMv8 or it does weird things occassionaly 
 
-    # make sure ida understands us correctly
+    idaapi.set_processor_type("arm:ARMv7-A&R", ida_idp.SETPROC_LOADER_NON_FATAL)
     idc.process_config_line("ARM_DEFAULT_ARCHITECTURE = ARMv7-A&R")
+    
     idc.process_config_line("ARM_SIMPLIFY = NO")
     idc.process_config_line("ARM_NO_ARM_THUMB_SWITCH = NO")
 
@@ -129,8 +133,10 @@ def load_file(fd, neflags, format):
         if (seg_name == "GVERSION" and seg_start == 0x0):
 
             idc.msg("[i] found GVERSION, this is Tensor land\n")
-            idaapi.set_processor_type("arm:ARMv8", ida_idp.SETPROC_LOADER_NON_FATAL)
             
+            idaapi.set_processor_type("arm:ARMv8", ida_idp.SETPROC_LOADER_NON_FATAL)
+            idc.process_config_line("ARM_DEFAULT_ARCHITECTURE = ARMv8")
+
             tensor = True
             
             break
@@ -151,12 +157,22 @@ def load_file(fd, neflags, format):
         # set entry points of main and bootloader
         if (seg_name == "BOOT"):
             
+            #mark RX
+            idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, ida_segment.SEGPERM_EXEC | ida_segment.SEGPERM_READ | ida_segment.SEGPERM_WRITE)
+            
             idaapi.add_entry(seg_start, seg_start, "bootloader_entry", 1)
             idc.set_cmt(seg_start, "bootloader entry point", 1)
             ida_auto.auto_make_code(seg_start)
 
         # process main segment and create vector table
         if (seg_name == "MAIN"):
+            
+            # mark RX
+            idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, ida_segment.SEGPERM_EXEC | ida_segment.SEGPERM_READ | ida_segment.SEGPERM_WRITE)
+            
+            # the fancy "ShannonOS" string, 
+            version_addr = shannon_generic.search_text(seg_start, seg_end, "_ShannonOS_")
+            version_string = idc.get_strlit_contents(version_addr)
 
             # 0x0  Reset
             # 0x4  Undefined Instruction
@@ -187,26 +203,34 @@ def load_file(fd, neflags, format):
 
             idaapi.add_entry(seg_start + 28, seg_start + 28, "fiq", 1)
 
+        if (seg_name == "VSS"):
+            # mark RX
+            idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, ida_segment.SEGPERM_EXEC | ida_segment.SEGPERM_READ | ida_segment.SEGPERM_WRITE)
+
         start_offset += 0x20
 
-    shannon_structs.add_dbt_struct()
-    
+    # let's do that before creating any code (avoids false positives in AA)
+    shannon_generic.create_long_strings()
+
     # needs to be done very early
+    shannon_structs.add_dbt_struct()
     make_dbt()
+    
+    shannon_structs.add_scatter_struct()
+    shannon_structs.add_mpu_region_struct()
+    shannon_structs.add_task_struct()
 
-    if(not tensor):
-        shannon_structs.add_scatter_struct()
-        shannon_structs.add_mpu_region_struct()
-        shannon_structs.add_task_struct()
+    # These 3 lines were awarded the most ugliest hack award 2024, runs a script which scheudles a callback without
+    # beeing unloaded with the loader.
 
-        # These 3 lines were awarded the most ugliest hack award 2024, runs a script which scheudles a callback without
-        # beeing unloaded with the loader.
+    rv = ida_expr.idc_value_t()
+    idc_line = 'RunPythonStatement("exec(open(\'' + idaapi.idadir(
+        "python") + '/shannon_postprocess.py\').read())")'
+    ida_expr.eval_idc_expr(rv, idaapi.BADADDR, idc_line)
+    
+    if(version_string != None):
+        idc.msg("[i] RTOS version:%s\n" % version_string.decode().replace("_", " "))
 
-        rv = ida_expr.idc_value_t()
-        idc_line = 'RunPythonStatement("exec(open(\'' + idaapi.idadir(
-            "python") + '/shannon_postprocess.py\').read())")'
-        ida_expr.eval_idc_expr(rv, idaapi.BADADDR, idc_line)
-
-        idc.msg("[i] loader done, starting auto analysis\n")
+    idc.msg("[i] loader done, starting auto analysis\n")
 
     return 1

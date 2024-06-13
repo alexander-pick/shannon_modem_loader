@@ -97,7 +97,7 @@ def create_scatter_tbl(scatterload):
 
     # make a "unique" list by converting it to a set and back
     op_list = list(set(op_list))
-
+    
     ops = find_scatter_functions(op_list)
     process_scattertbl(scatter_start, scatter_size, ops)
 
@@ -124,7 +124,7 @@ def find_scatter_functions(op_list):
 
         # process functions
 
-        recreate_function(op)
+        #recreate_function(op)
 
         metrics = shannon_generic.get_metric(op)
 
@@ -149,7 +149,7 @@ def find_scatter_functions(op_list):
                 else:
                     scatter_zero = op
                     idc.msg("[i] found scatterload_zeroinit() at %x\n" % op)
-                break
+                continue
 
         for branch in metrics[0]:
 
@@ -252,7 +252,7 @@ def process_scattertbl(scatter_start, scatter_size, ops):
 
                     case 3:  # decpmpression
 
-                        chunk = scatterload_decompress(entry[0], entry[1], entry[2])
+                        chunk = scatterload_decompress(entry[0], entry[2])
 
                         shannon_generic.add_memory_segment(entry[1], len(chunk),
                                                            "SCATCOMP_" + str(scatter_id),
@@ -366,6 +366,19 @@ def find_scatter():
 
                             # scatterload is the first branch in main, right after the crt (reset vector)
                             if ("B" == reset_opcode):
+                                
+                                # it's all about beeing flexible ...                                                                
+                                b_target = idc.get_operand_value(reset_func_cur, 0)
+                                
+                                next_opcode = ida_ua.ua_mnem(b_target)
+                                if(next_opcode == None):
+                                    idc.msg("[d] error in scatter branch\n")
+                                    return
+                                
+                                if("B" == next_opcode):
+                                    idc.msg("[d] additional jump\n")
+                                    # new BB jump twice, so we check that here and follow the white rabbit
+                                    reset_func_cur = b_target
 
                                 scatterload = process_scatterload(reset_func_cur)
                                 create_scatter_tbl(scatterload)
@@ -384,13 +397,14 @@ def find_scatter():
 # after reversing it I think it is LZ77 which is also one of the compressions
 # the ARM linker supports next to RLE
 
-# decompress from src to dst, input buffer cnt
-def scatterload_decompress(src, dst, cnt):
+# decompress from src to dst, input buffer cnt - costed me an arm and a leg to 
+# get it working but it now uncompresses 100% of the buffer and does it correctly
+def scatterload_decompress(src, cnt):
 
     src_index = 0
     dst_index = 0
 
-    output_buffer = bytearray()
+    output_buffer = bytearray(cnt)
 
     while (src_index < cnt):
 
@@ -416,13 +430,16 @@ def scatterload_decompress(src, dst, cnt):
 
         # copy x bytes from the source to the destination
         for _ in range(cpy_bytes):
+            
+            if(dst_index >= cnt):
+                #idc.msg("[d] out of bound write to %x/%x\n" % (cnt, dst_index))
+                return bytes(list(output_buffer))
 
             if (dst_index >= len(output_buffer)):
                 output_buffer = output_buffer.ljust(dst_index + 1, b"\x00")
 
             # copy byte from source to destination
             byte = ida_bytes.get_byte(src + src_index)
-            # ida_bytes.put_byte(dst + dst_index, byte)
             output_buffer[dst_index] = byte
 
             dst_index += 1
@@ -455,14 +472,26 @@ def scatterload_decompress(src, dst, cnt):
 
             # copy 'high_4_b + 1' bytes from the previously decompressed data
             for _ in range(high_4_b + 1):
+                
+                # buffer max bailout
+                if(dst_index >= cnt):
+                    #idc.msg("[d] out of bound write to %x/%x\n" % (cnt, dst_index))
+                    return bytes(list(output_buffer))
 
                 if (dst_index >= len(output_buffer)):
                     output_buffer = output_buffer.ljust(dst_index + 1, b"\x00")
 
+                # some possible error conditions
+                if(src_ptr > cnt):
+                    #idc.msg("[d] out of bound read to %x/%x\n" % (cnt, src_ptr))
+                    return bytes(list(output_buffer))
+                
+                if(src_ptr < 0):
+                    #idc.msg("[d] negativ read %x\n" % (src_ptr))
+                    return bytes(list(output_buffer))
+
                 # copy byte from previously decompressed data to the current destination
-                byte = ida_bytes.get_byte(dst + src_ptr)
-                # ida_bytes.put_byte(dst + dst_index, byte)
-                output_buffer[dst_index] = byte
+                output_buffer[dst_index] = output_buffer[src_ptr]
 
                 dst_index += 1
                 src_ptr += 1

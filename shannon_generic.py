@@ -35,7 +35,14 @@ def add_memory_segment(seg_start, seg_size, seg_name, seg_type="DATA", sparse=Tr
                     idaapi.scPub, ida_segment.ADDSEG_SPARSE)
 
     idc.set_segm_class(seg_start, seg_type)
-    idc.set_segm_type(seg_start, idaapi.SEG_DATA)
+    
+    if(seg_type == "CODE"):
+        idc.set_segm_type(seg_start, idaapi.SEG_CODE)
+        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, ida_segment.SEGPERM_EXEC | ida_segment.SEGPERM_READ | ida_segment.SEGPERM_WRITE)
+    else:
+        idc.set_segm_type(seg_start, idaapi.SEG_DATA)
+        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, ida_segment.SEGPERM_WRITE | ida_segment.SEGPERM_READ)
+    
     idc.set_segm_name(seg_start, seg_name)
 
     # make sure it is really STT_MM (sparse)
@@ -136,14 +143,14 @@ def get_first_ref(ea):
    
     return idaapi.BADADDR
    
-# creates strings which are at least 12 bytes long
-def create_long_strings():
+# creates strings which are at least 11 bytes long
+def create_long_strings(length=11):
 
     idc.msg("[i] creating long strings\n")
 
     strings = idautils.Strings()
 
-    strings.setup(strtypes=[ida_nalt.STRTYPE_C], ignore_instructions=True, minlen=12)
+    strings.setup(strtypes=[ida_nalt.STRTYPE_C], ignore_instructions=True, minlen=length)
 
     strings.refresh()
 
@@ -287,9 +294,6 @@ def search_text(start_ea, end_ea, text):
                 
         ea = ida_bytes.bin_search(start_ea, end_ea, patterns, ida_bytes.BIN_SEARCH_FORWARD |
                                   ida_bytes.BIN_SEARCH_NOBREAK | ida_bytes.BIN_SEARCH_NOSHOW)
-
-        # stupid hack to get beginning of the string in case we found a substring
-        ea = idc.prev_head(idc.next_head(ea))
 
         return ea
 
