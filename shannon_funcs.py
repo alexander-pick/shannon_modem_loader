@@ -68,8 +68,8 @@ def split_functions():
 
             if func_o is not None:
                 if (func_o.end_ea != prev_head or func_o.end_ea != xref.frm):
-                    idc.msg("[d] differing boundaries for function at %x, setting end to %x, was %x\n" % (
-                        func_start, prev_head, func_end))
+                    # idc.msg("[d] differing boundaries for function at %x, setting end to %x, was %x\n" % (
+                    #     func_start, prev_head, func_end))
                     func_o.end_ea = prev_head
                     ida_funcs.update_func(func_o)
                     ida_funcs.reanalyze_function(func_o)
@@ -120,7 +120,7 @@ def scan_main():
                     # avoid defining the tail as own functions
                     if (addr != tail_offset):
                         ida_funcs.add_func(addr, tail_offset)
-                        idc.msg("[d] found a function %x-%x\n" % (addr, tail_offset))
+                        # idc.msg("[d] found a function %x-%x\n" % (addr, tail_offset))
 
         addr = idc.next_head(addr)
 

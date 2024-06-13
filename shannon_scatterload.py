@@ -372,11 +372,11 @@ def find_scatter():
                                 
                                 next_opcode = ida_ua.ua_mnem(b_target)
                                 if(next_opcode == None):
-                                    idc.msg("[d] error in scatter branch\n")
+                                    # idc.msg("[d] error in scatter branch\n")
                                     return
                                 
                                 if("B" == next_opcode):
-                                    idc.msg("[d] additional jump\n")
+                                    # idc.msg("[d] additional jump\n")
                                     # new BB jump twice, so we check that here and follow the white rabbit
                                     reset_func_cur = b_target
 

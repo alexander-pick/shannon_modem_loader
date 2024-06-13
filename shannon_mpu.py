@@ -42,13 +42,13 @@ def find_hw_init():
     offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "Invalid warm boot")
     offset = shannon_generic.get_first_ref(offset)
 
-    idc.msg("[d] find_hw_init() offset pre: %x\n" % offset)
+    # idc.msg("[d] find_hw_init() offset pre: %x\n" % offset)
 
     if (offset != idaapi.BADADDR):
         if (shannon_funcs.function_find_boundaries(offset)):
             offset = idc.get_func_attr(offset, idc.FUNCATTR_START)
 
-    idc.msg("[d] find_hw_init() offset: %x\n" % offset)
+    # idc.msg("[d] find_hw_init() offset: %x\n" % offset)
 
     if (offset != idaapi.BADADDR):
 
@@ -162,7 +162,7 @@ def scan_for_mrc():
     for ea in idautils.Functions(seg_t.start_ea, seg_t.end_ea):
         validate_mmu_candidate(ea)
 
-    idc.msg("[d] scan done\n")
+    # idc.msg("[d] scan done\n")
 
 # check if we found the mpu table
 def validate_mpu_candidate(bl_target):

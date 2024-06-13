@@ -243,7 +243,7 @@ def get_metric(bl_target):
 
 # print metrics from get_metrics() for dbg reasons
 def print_metrics(addr, metrics):
-    idc.msg("[d] %x: loops: %d branch: %d length: %d basic blocks: %d xrefs: %d ldr: %d calls: %d\n" % (
+    idc.msg("[i] %x: loops: %d branch: %d length: %d basic blocks: %d xrefs: %d ldr: %d calls: %d\n" % (
         addr, len(metrics[0]), len(metrics[1]), metrics[2], metrics[3], len(metrics[4]), len(metrics[5]), len(metrics[6])))
 
 # rolled a own txt search based on bin search here, I wasn't happy with
