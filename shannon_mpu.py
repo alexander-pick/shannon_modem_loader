@@ -151,10 +151,10 @@ def validate_mmu_candidate(bl_target):
 
     return
 
-# find all MRC with write to CP15 etc.
+# find all MRC with write to CP15 etc. - looking for MMU setup
 def scan_for_mrc():
         
-    seg_t = get_segment_boundaries()
+    seg_t = get_segment_boundaries("BOOT_file")
     
     if(seg_t == None):
         return

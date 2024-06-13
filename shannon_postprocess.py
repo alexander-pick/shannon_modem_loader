@@ -36,7 +36,7 @@ def find_cookie_monster():
     offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "Check a function")
     offset = shannon_generic.get_first_ref(offset)
     
-    if(offset != None):
+    if(offset != None and offset != idaapi.BADADDR):
         
         idc.msg("[i] found stack protection handler at %x\n" % offset)
         
