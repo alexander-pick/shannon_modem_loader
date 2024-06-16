@@ -238,7 +238,17 @@ def find_task_desc_tbl(task_func_start, task_func_end):
 
                 idc.msg("[i] pal_TaskDescTbl(): %x\n" % tbl_offset)
 
-                identify_task_init(tbl_offset)
+                tasks = identify_task_init(tbl_offset)
+                
+                if(tasks < 5):
+                    #retry the short version by deleting gap_14 (padding)
+
+                    struct_id = ida_struct.get_struc_id("task_struct")
+                    sptr = ida_struct.get_struc(struct_id)
+                    str_ptr = ida_struct.get_member_by_name(sptr, "gap_14")
+                    idaapi.del_struc_member(sptr, str_ptr.soff)
+                    
+                    tasks = identify_task_init(tbl_offset)
 
             ldr_cnt += 1
 
@@ -293,6 +303,7 @@ def identify_task_init(tbl_offset):
 
         tasks += 1
 
+    return tasks
 
 #for debugging purpose export SHANNON_WORKFLOW="NO"
 if os.environ.get('SHANNON_WORKFLOW') == "NO":

@@ -66,14 +66,12 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         # from here on do the fancy stuff
 
         shannon_debug_traces.make_dbt_refs()
-        
-        find_cookie_monster()
-        
-        shannon_pal_reconstructor.find_basic_pal_functions()
 
         shannon_names.restore_ss_names()
         shannon_names.restore_cpp_names()
         shannon_generic.create_long_strings()
+        
+        find_cookie_monster()
 
         for s in idautils.Segments():
 
@@ -112,6 +110,8 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
                 shannon_mpu.find_hw_init()
 
                 shannon_scatterload.find_scatter()
+        
+                shannon_pal_reconstructor.find_basic_pal_functions()
 
         # remove "please wait ..." box and display runtime in log
         idaapi.hide_wait_box()
