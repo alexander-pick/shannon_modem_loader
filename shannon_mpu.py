@@ -366,6 +366,7 @@ def validate_mmu_candidate(bl_target):
                             comment_mcr_mrc(True, operands[3], operands[4], addr)  
                         
                         else:
+                            
                             comment_mcr_mrc(False, operands[3], operands[4], addr)            
    
             addr = idc.next_head(addr)
