@@ -108,137 +108,137 @@ def comment_mcr_mrc(read_write, operand, addr):
 
     # ID and System Configuration Registers
     if("c0c" in operand):
-        idaapi.set_cmt(addr, "Information about the processor - "+op, 1)
+        idaapi.set_cmt(addr, "Information about the processor - "+op, 0)
 
         if("c0c0" in operand):
-            idaapi.set_cmt(addr, "Information about the cache architecture - "+op, 1)
+            idaapi.set_cmt(addr, "Information about the cache architecture - "+op, 0)
             return
 
         if("c0c1" in operand):
-            idaapi.set_cmt(addr, "Information about the cache architecture - "+op, 1)
+            idaapi.set_cmt(addr, "Information about the cache architecture - "+op, 0)
             return
     
         if("c0c2" in operand):
-            idaapi.set_cmt(addr, "Information about TCMs (Tightly Coupled Memories) - "+op, 1)
+            idaapi.set_cmt(addr, "Information about TCMs (Tightly Coupled Memories) - "+op, 0)
             return
         
         if("c0c3" in operand):
-            idaapi.set_cmt(addr, "Information about the TLB architecture - "+op, 1)
+            idaapi.set_cmt(addr, "Information about the TLB architecture - "+op, 0)
             idc.msg("[i] MMU - TLB info request at %x\n" % (addr))
             return
     
         if("c0c4" in operand):
-            idaapi.set_cmt(addr, "Information about the MPU (Memory Protection Unit) - "+op, 1)
+            idaapi.set_cmt(addr, "Information about the MPU (Memory Protection Unit) - "+op, 0)
             idc.msg("[i] MMU - MMU info request at %x\n" % (addr))
             return
         
         if("c0c5" in operand):
-            idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 1)
+            idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 0)
             return
         
         if("c0c6" in operand):
-            idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 1)
+            idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 0)
             return
         
         if("c0c7" in operand):
-            idaapi.set_cmt(addr, "Debug Feature Register (DFR) - information about debug features - "+op, 1)
+            idaapi.set_cmt(addr, "Debug Feature Register (DFR) - information about debug features - "+op, 0)
             return
         
         if("c0c8" in operand):
-            idaapi.set_cmt(addr, "Auxiliary Feature Register (AFR) - auxiliary features information - "+op, 1)
+            idaapi.set_cmt(addr, "Auxiliary Feature Register (AFR) - auxiliary features information - "+op, 0)
             return
         
         if("c0c9" in operand):
-            idaapi.set_cmt(addr, "Memory Model Feature Register 0 (MMFR0) - additional memory model features. - "+op, 1)
+            idaapi.set_cmt(addr, "Memory Model Feature Register 0 (MMFR0) - additional memory model features. - "+op, 0)
             return
         
         if("c0c10" in operand):
-            idaapi.set_cmt(addr, "Memory Model Feature Register 1 (MMFR1) - additional memory model features. - "+op, 1)
+            idaapi.set_cmt(addr, "Memory Model Feature Register 1 (MMFR1) - additional memory model features. - "+op, 0)
             return
         
         if("c0c11" in operand):
-            idaapi.set_cmt(addr, "Memory Model Feature Register 2 (MMFR2) - additional memory model features. - "+op, 1)
+            idaapi.set_cmt(addr, "Memory Model Feature Register 2 (MMFR2) - additional memory model features. - "+op, 0)
             return
         
         if("c0c12" in operand):
-            idaapi.set_cmt(addr, "Memory Model Feature Register 3 (MMFR3) - additional memory model features. - "+op, 1)
+            idaapi.set_cmt(addr, "Memory Model Feature Register 3 (MMFR3) - additional memory model features. - "+op, 0)
             return
 
         if("c0c13" in operand):
-            idaapi.set_cmt(addr, "ISA Feature Register 0 (ISAR1) - additional instruction set information - "+op, 1)
+            idaapi.set_cmt(addr, "ISA Feature Register 0 (ISAR1) - additional instruction set information - "+op, 0)
             return
         
         if("c0c14" in operand):
-            idaapi.set_cmt(addr, "ISA Feature Register 1 (ISAR1) - additional instruction set information - "+op, 1)
+            idaapi.set_cmt(addr, "ISA Feature Register 1 (ISAR1) - additional instruction set information - "+op, 0)
             return
         
         if("c0c15" in operand):
-            idaapi.set_cmt(addr, "ISA Feature Register 2 (ISAR2) - additional instruction set information - "+op, 1)
+            idaapi.set_cmt(addr, "ISA Feature Register 2 (ISAR2) - additional instruction set information - "+op, 0)
             return
             
     # System Control Register (SCTLR)
     if("c1c" in operand):
-        idaapi.set_cmt(addr, "System Control Register - "+op, 1)
+        idaapi.set_cmt(addr, "System Control Register - "+op, 0)
         return
 
     # Translation Table Base Register (TTBR)
     if("c2c" in operand):
-        idaapi.set_cmt(addr, "Translation Table Base Register - "+op, 1)
+        idaapi.set_cmt(addr, "Translation Table Base Register - "+op, 0)
        
         if("c2c0" in operand):
-            idaapi.set_cmt(addr, "Translation Table Base Register (TTBR0), base of the first-level translation table - "+op, 1)
+            idaapi.set_cmt(addr, "Translation Table Base Register (TTBR0), base of the first-level translation table - "+op, 0)
             if(read_write):
                 idc.msg("[i] MMU - TTBR0 setup at %x\n" % (addr))            
             return   
     
         if("c2c1" in operand):
-            idaapi.set_cmt(addr, "Translation Table Base Register (TTBR1), base of the second-level translation table - "+op, 1)
+            idaapi.set_cmt(addr, "Translation Table Base Register (TTBR1), base of the second-level translation table - "+op, 0)
             if(read_write):
                 idc.msg("[i] MMU - TTBR1 setup at %x\n" % (addr))
             return   
     
         if("c2c2" in operand):
-            idaapi.set_cmt(addr, "ranslation Table Base Control Register (TTBCR), controls the use of TTBR0 and TTBR1 - "+op, 1)
+            idaapi.set_cmt(addr, "ranslation Table Base Control Register (TTBCR), controls the use of TTBR0 and TTBR1 - "+op, 0)
             return                       
 
     # Domain Access Control Register
     if("c3c" in operand):
-        idaapi.set_cmt(addr, "Domain Access Control Register - "+op, 1)
+        idaapi.set_cmt(addr, "Domain Access Control Register - "+op, 0)
         return   
 
     # Fault Status Registers
     if("c5c" in operand):
-        idaapi.set_cmt(addr, "Fault Status Registers - "+op, 1)
+        idaapi.set_cmt(addr, "Fault Status Registers - "+op, 0)
         return   
         
     # Fault Address Registers
     if("c6c" in operand):
-        idaapi.set_cmt(addr, "Fault Address Registers - "+op, 1)
+        idaapi.set_cmt(addr, "Fault Address Registers - "+op, 0)
         return   
         
     # Cache and Branch Predictor Maintenance
     if("c7c" in operand):
-        idaapi.set_cmt(addr, "Cache and Branch Predictor Maintenance - "+op, 1)
+        idaapi.set_cmt(addr, "Cache and Branch Predictor Maintenance - "+op, 0)
         return   
         
     # Performance Monitors Registers
     if("c9c" in operand):
-        idaapi.set_cmt(addr, "Performance Monitors Registers - "+op, 1)
+        idaapi.set_cmt(addr, "Performance Monitors Registers - "+op, 0)
         return   
 
     # Memory Management Fault Address Registers
     if("c10c" in operand):
-        idaapi.set_cmt(addr, "Memory Management Fault Address Registers - "+op, 1)
+        idaapi.set_cmt(addr, "Memory Management Fault Address Registers - "+op, 0)
         return   
         
     # Vector Base Address Register (VBAR):
     if("c12c" in operand):
-        idaapi.set_cmt(addr, "Vector Base Address Register (VBAR) - "+op, 1)
+        idaapi.set_cmt(addr, "Vector Base Address Register (VBAR) - "+op, 0)
         return
     
     # Process, Context, and Thread ID Registers
     if("c13c" in operand):
-        idaapi.set_cmt(addr, "Vrocess, Context, and Thread ID Registers - "+op, 1)
+        idaapi.set_cmt(addr, "Vrocess, Context, and Thread ID Registers - "+op, 0)
         return
 
 # comment MSR ops on CPSR
