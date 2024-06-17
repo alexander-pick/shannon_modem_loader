@@ -99,7 +99,7 @@ def find_hw_init():
         idc.msg("[i] failed to identify hw_init()\n")
 
 # comment mrc and mrc operations
-def comment_mcr_mrc(read_write, operand, addr):
+def comment_mcr_mrc(read_write, operand, opcode, addr):
     
     op = "read"
     
@@ -110,69 +110,69 @@ def comment_mcr_mrc(read_write, operand, addr):
     if("c0c" in operand):
         idaapi.set_cmt(addr, "Information about the processor - "+op, 0)
 
-        if("c0c0" in operand):
-            idaapi.set_cmt(addr, "Information about the cache architecture - "+op, 0)
+        if(opcode == 0):
+            idaapi.set_cmt(addr, "Main ID Register (MIDR) - processor identification information - "+op, 0)
             return
 
-        if("c0c1" in operand):
-            idaapi.set_cmt(addr, "Information about the cache architecture - "+op, 0)
+        if(opcode == 1):
+            idaapi.set_cmt(addr, "Cache Type Register (CTR) - level 1 data cache characteristics - "+op, 0)
             return
     
-        if("c0c2" in operand):
+        if(opcode == 2):
             idaapi.set_cmt(addr, "Information about TCMs (Tightly Coupled Memories) - "+op, 0)
             return
         
-        if("c0c3" in operand):
+        if(opcode == 3):
             idaapi.set_cmt(addr, "Information about the TLB architecture - "+op, 0)
             idc.msg("[i] MMU - TLB info request at %x\n" % (addr))
             return
     
-        if("c0c4" in operand):
+        if(opcode == 4):
             idaapi.set_cmt(addr, "Information about the MPU (Memory Protection Unit) - "+op, 0)
             idc.msg("[i] MMU - MMU info request at %x\n" % (addr))
             return
         
-        if("c0c5" in operand):
+        if(opcode == 5):
             idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 0)
             return
         
-        if("c0c6" in operand):
+        if(opcode == 6):
             idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 0)
             return
         
-        if("c0c7" in operand):
+        if(opcode == 7):
             idaapi.set_cmt(addr, "Debug Feature Register (DFR) - information about debug features - "+op, 0)
             return
         
-        if("c0c8" in operand):
+        if(opcode == 8):
             idaapi.set_cmt(addr, "Auxiliary Feature Register (AFR) - auxiliary features information - "+op, 0)
             return
         
-        if("c0c9" in operand):
+        if(opcode == 9):
             idaapi.set_cmt(addr, "Memory Model Feature Register 0 (MMFR0) - additional memory model features. - "+op, 0)
             return
         
-        if("c0c10" in operand):
+        if(opcode == 10):
             idaapi.set_cmt(addr, "Memory Model Feature Register 1 (MMFR1) - additional memory model features. - "+op, 0)
             return
         
-        if("c0c11" in operand):
+        if(opcode == 11):
             idaapi.set_cmt(addr, "Memory Model Feature Register 2 (MMFR2) - additional memory model features. - "+op, 0)
             return
         
-        if("c0c12" in operand):
+        if(opcode == 12):
             idaapi.set_cmt(addr, "Memory Model Feature Register 3 (MMFR3) - additional memory model features. - "+op, 0)
             return
 
-        if("c0c13" in operand):
+        if(opcode == 13):
             idaapi.set_cmt(addr, "ISA Feature Register 0 (ISAR1) - additional instruction set information - "+op, 0)
             return
         
-        if("c0c14" in operand):
+        if(opcode == 14):
             idaapi.set_cmt(addr, "ISA Feature Register 1 (ISAR1) - additional instruction set information - "+op, 0)
             return
         
-        if("c0c15" in operand):
+        if(opcode == 15):
             idaapi.set_cmt(addr, "ISA Feature Register 2 (ISAR2) - additional instruction set information - "+op, 0)
             return
             
@@ -185,20 +185,20 @@ def comment_mcr_mrc(read_write, operand, addr):
     if("c2c" in operand):
         idaapi.set_cmt(addr, "Translation Table Base Register - "+op, 0)
        
-        if("c2c0" in operand):
+        if(opcode == 0):
             idaapi.set_cmt(addr, "Translation Table Base Register (TTBR0), base of the first-level translation table - "+op, 0)
             if(read_write):
-                idc.msg("[i] MMU - TTBR0 setup at %x\n" % (addr))            
+                idc.msg("[i] MMU - TTBR0 write at %x\n" % (addr))            
             return   
     
-        if("c2c1" in operand):
+        if(opcode == 1):
             idaapi.set_cmt(addr, "Translation Table Base Register (TTBR1), base of the second-level translation table - "+op, 0)
             if(read_write):
-                idc.msg("[i] MMU - TTBR1 setup at %x\n" % (addr))
+                idc.msg("[i] MMU - TTBR1 write at %x\n" % (addr))
             return   
     
-        if("c2c2" in operand):
-            idaapi.set_cmt(addr, "ranslation Table Base Control Register (TTBCR), controls the use of TTBR0 and TTBR1 - "+op, 0)
+        if(opcode == 2):
+            idaapi.set_cmt(addr, "Translation Table Base Control Register (TTBCR), controls the use of TTBR0 and TTBR1 - "+op, 0)
             return                       
 
     # Domain Access Control Register
@@ -238,7 +238,7 @@ def comment_mcr_mrc(read_write, operand, addr):
     
     # Process, Context, and Thread ID Registers
     if("c13c" in operand):
-        idaapi.set_cmt(addr, "Vrocess, Context, and Thread ID Registers - "+op, 0)
+        idaapi.set_cmt(addr, "Process, Context, and Thread ID Registers - "+op, 0)
         return
 
 # comment MSR ops on CPSR
@@ -322,18 +322,11 @@ def validate_mmu_candidate(bl_target):
             if(opcode == None):
                 addr = idc.next_head(addr)
                 continue
-            
-            # SCTLR (c1, c0, 0) - System Control Register - core system controls <- want this
-            # ACTLR (c1, c0, 1) - Auxiliary Control Register - coprocessor optimizations
-            # CPACR (c1, c0, 2) - Coprocessor Access Control Register - access perm, FPU, NEON
-            # NSACR (c1, c0, 7) - Non-Secure Access Control Register
 
             # MCR p15, 0, R0, c2, c0, 2 
             # -> Write to CP15 - Operand Num (normally 0), Source Reg CPU, Coproc Num, Coproc Reg, Reg Offset
             # c2 is translation table
             
-            # MCR p15, 0, R1, c3, c0, 0 
-
             # MCR - write
             # MRC - read
             
@@ -370,10 +363,10 @@ def validate_mmu_candidate(bl_target):
             
                         if ("MCR" in opcode):
                                 
-                            comment_mcr_mrc(True, operands[3], addr)  
+                            comment_mcr_mrc(True, operands[3], operands[4], addr)  
                         
                         else:
-                            comment_mcr_mrc(False, operands[3], addr)            
+                            comment_mcr_mrc(False, operands[3], operands[4], addr)            
    
             addr = idc.next_head(addr)
 
