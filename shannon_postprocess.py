@@ -108,10 +108,12 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
                 # in a weird state
 
                 shannon_mpu.find_hw_init()
+                shannon_mpu.scan_for_mrc()
 
                 shannon_scatterload.find_scatter()
         
-                shannon_pal_reconstructor.find_basic_pal_functions()
+                shannon_pal_reconstructor.find_pal_msg_funcs()
+                shannon_pal_reconstructor.find_pal_init()
 
         # remove "please wait ..." box and display runtime in log
         idaapi.hide_wait_box()

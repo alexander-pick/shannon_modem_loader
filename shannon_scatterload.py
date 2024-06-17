@@ -351,7 +351,7 @@ def find_scatter():
                             mode_switch += 1
                             continue
 
-                        # idc.msg("[d] second supervisor mode switch found: %x\n" % func_cur)
+                        #idc.msg("[d] second supervisor mode switch found: %x\n" % func_cur)
 
                         reset_func_cur = func_cur
 
@@ -367,6 +367,8 @@ def find_scatter():
                             # scatterload is the first branch in main, right after the crt (reset vector)
                             if ("B" == reset_opcode):
                                 
+                                idc.msg("[d] scatter candidate at %x\n" % reset_func_cur)
+                                
                                 # it's all about beeing flexible ...                                                                
                                 b_target = idc.get_operand_value(reset_func_cur, 0)
                                 
@@ -376,7 +378,7 @@ def find_scatter():
                                     return
                                 
                                 if("B" == next_opcode):
-                                    # idc.msg("[d] additional jump\n")
+                                    idc.msg("[d] additional jump at %x\n" % b_target)
                                     # new BB jump twice, so we check that here and follow the white rabbit
                                     reset_func_cur = b_target
 

@@ -13,6 +13,8 @@ import ida_bytes
 import ida_struct
 import idautils
 
+import ida_idp
+
 import shannon_generic
 import shannon_funcs
 
@@ -96,6 +98,211 @@ def find_hw_init():
     else:
         idc.msg("[i] failed to identify hw_init()\n")
 
+# comment mrc and mrc operations
+def comment_mcr_mrc(read_write, operand, addr):
+    
+    op = "read"
+    
+    if(read_write):
+        op = "write"
+
+    # ID and System Configuration Registers
+    if("c0c" in operand):
+        idaapi.set_cmt(addr, "Information about the processor - "+op, 1)
+
+        if("c0c0" in operand):
+            idaapi.set_cmt(addr, "Information about the cache architecture - "+op, 1)
+            return
+
+        if("c0c1" in operand):
+            idaapi.set_cmt(addr, "Information about the cache architecture - "+op, 1)
+            return
+    
+        if("c0c2" in operand):
+            idaapi.set_cmt(addr, "Information about TCMs (Tightly Coupled Memories) - "+op, 1)
+            return
+        
+        if("c0c3" in operand):
+            idaapi.set_cmt(addr, "Information about the TLB architecture - "+op, 1)
+            idc.msg("[i] MMU - TLB info request at %x\n" % (addr))
+            return
+    
+        if("c0c4" in operand):
+            idaapi.set_cmt(addr, "Information about the MPU (Memory Protection Unit) - "+op, 1)
+            idc.msg("[i] MMU - MMU info request at %x\n" % (addr))
+            return
+        
+        if("c0c5" in operand):
+            idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 1)
+            return
+        
+        if("c0c6" in operand):
+            idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 1)
+            return
+        
+        if("c0c7" in operand):
+            idaapi.set_cmt(addr, "Debug Feature Register (DFR) - information about debug features - "+op, 1)
+            return
+        
+        if("c0c8" in operand):
+            idaapi.set_cmt(addr, "Auxiliary Feature Register (AFR) - auxiliary features information - "+op, 1)
+            return
+        
+        if("c0c9" in operand):
+            idaapi.set_cmt(addr, "Memory Model Feature Register 0 (MMFR0) - additional memory model features. - "+op, 1)
+            return
+        
+        if("c0c10" in operand):
+            idaapi.set_cmt(addr, "Memory Model Feature Register 1 (MMFR1) - additional memory model features. - "+op, 1)
+            return
+        
+        if("c0c11" in operand):
+            idaapi.set_cmt(addr, "Memory Model Feature Register 2 (MMFR2) - additional memory model features. - "+op, 1)
+            return
+        
+        if("c0c12" in operand):
+            idaapi.set_cmt(addr, "Memory Model Feature Register 3 (MMFR3) - additional memory model features. - "+op, 1)
+            return
+
+        if("c0c13" in operand):
+            idaapi.set_cmt(addr, "ISA Feature Register 0 (ISAR1) - additional instruction set information - "+op, 1)
+            return
+        
+        if("c0c14" in operand):
+            idaapi.set_cmt(addr, "ISA Feature Register 1 (ISAR1) - additional instruction set information - "+op, 1)
+            return
+        
+        if("c0c15" in operand):
+            idaapi.set_cmt(addr, "ISA Feature Register 2 (ISAR2) - additional instruction set information - "+op, 1)
+            return
+            
+    # System Control Register (SCTLR)
+    if("c1c" in operand):
+        idaapi.set_cmt(addr, "System Control Register - "+op, 1)
+        return
+
+    # Translation Table Base Register (TTBR)
+    if("c2c" in operand):
+        idaapi.set_cmt(addr, "Translation Table Base Register - "+op, 1)
+       
+        if("c2c0" in operand):
+            idaapi.set_cmt(addr, "Translation Table Base Register (TTBR0), base of the first-level translation table - "+op, 1)
+            if(read_write):
+                idc.msg("[i] MMU - TTBR0 setup at %x\n" % (addr))            
+            return   
+    
+        if("c2c1" in operand):
+            idaapi.set_cmt(addr, "Translation Table Base Register (TTBR1), base of the second-level translation table - "+op, 1)
+            if(read_write):
+                idc.msg("[i] MMU - TTBR1 setup at %x\n" % (addr))
+            return   
+    
+        if("c2c2" in operand):
+            idaapi.set_cmt(addr, "ranslation Table Base Control Register (TTBCR), controls the use of TTBR0 and TTBR1 - "+op, 1)
+            return                       
+
+    # Domain Access Control Register
+    if("c3c" in operand):
+        idaapi.set_cmt(addr, "Domain Access Control Register - "+op, 1)
+        return   
+
+    # Fault Status Registers
+    if("c5c" in operand):
+        idaapi.set_cmt(addr, "Fault Status Registers - "+op, 1)
+        return   
+        
+    # Fault Address Registers
+    if("c6c" in operand):
+        idaapi.set_cmt(addr, "Fault Address Registers - "+op, 1)
+        return   
+        
+    # Cache and Branch Predictor Maintenance
+    if("c7c" in operand):
+        idaapi.set_cmt(addr, "Cache and Branch Predictor Maintenance - "+op, 1)
+        return   
+        
+    # Performance Monitors Registers
+    if("c9c" in operand):
+        idaapi.set_cmt(addr, "Performance Monitors Registers - "+op, 1)
+        return   
+
+    # Memory Management Fault Address Registers
+    if("c10c" in operand):
+        idaapi.set_cmt(addr, "Memory Management Fault Address Registers - "+op, 1)
+        return   
+        
+    # Vector Base Address Register (VBAR):
+    if("c12c" in operand):
+        idaapi.set_cmt(addr, "Vector Base Address Register (VBAR) - "+op, 1)
+        return
+    
+    # Process, Context, and Thread ID Registers
+    if("c13c" in operand):
+        idaapi.set_cmt(addr, "Vrocess, Context, and Thread ID Registers - "+op, 1)
+        return
+
+# comment MSR ops on CPSR
+def comment_cpsr(value, addr):
+
+    # convert
+    binary_value = format(value, '032b')
+
+    # extrat
+    n_flag = int(binary_value[0], 2)
+    z_flag = int(binary_value[1], 2)
+    c_flag = int(binary_value[2], 2)
+    v_flag = int(binary_value[3], 2)
+    q_flag = int(binary_value[27], 2)
+    j_flag = int(binary_value[24], 2)
+    e_flag = int(binary_value[9], 2)
+    a_flag = int(binary_value[8], 2)
+    i_flag = int(binary_value[7], 2)
+    f_flag = int(binary_value[6], 2)
+    t_flag = int(binary_value[5], 2)
+    
+    mode_bits = binary_value[27:32]
+
+    # map mode bits to mode names
+    modes = {
+        '10000': 'user mode',
+        '10001': 'FIQ mode',
+        '10010': 'IRQ mode',
+        '10011': 'supervisor mode',
+        '10111': 'abort mode',
+        '11011': 'undefined mode',
+        '11111': 'system mode',
+    }
+    mode = modes.get(mode_bits, 'Unknown mode')
+
+    # the flags
+    flags = {
+        'N': 'negative',
+        'Z': 'zero',
+        'C': 'carry',
+        'V': 'overflow',
+        'Q': 'saturation',
+        'J': 'jazelle',
+        'E': 'endian',
+        'A': 'asynchronous abort',
+        'I': 'IRQ disable',
+        'F': 'FIQ disable',
+        'T': 'thumb',
+    }
+
+    comment = "mode: "+mode+"\n\n"
+    comment += "flags\n"
+    
+    for bit, (name, description) in enumerate(flags.items(), start=31):
+        
+        comment += str(bit)+": " 
+             
+        if(eval(name.lower() + "_flag")):
+            comment += "1 "+description+"\n"
+        else:
+            comment += "0 "+description+"\n"
+
+    idaapi.set_cmt(addr, comment, 1)
+
 # this tries to find the MRC opcodes required for setting up the MMU
 # we are looking for a write to SCTLR
 def validate_mmu_candidate(bl_target):
@@ -129,35 +336,53 @@ def validate_mmu_candidate(bl_target):
 
             # MCR - write
             # MRC - read
-            if ("MCR" in opcode):
+            
+            if("MSR" in opcode):
                 
+                cpsr = idc.get_operand_value(addr, 0)
+                cpsr_value = idc.get_operand_value(addr, 1)
+
+                if (cpsr == -1):
+                    addr = idc.next_head(addr)
+                    continue
+
+                cpsr_str = ida_idp.get_reg_name(cpsr, 0)
+
+                # this is normally a bit field, we just analyse some very common values here
+                if ("CPSR" in cpsr_str):
+                    comment_cpsr(cpsr_value, addr)
+                                    
+            if("MCR" in opcode or "MRC" in opcode):
+                
+                #idc.msg("[d] MCR/MRC: %x\n" % addr) 
+            
                 # workaround since get_oeprand_value does not work    
                 t = idaapi.generate_disasm_line(addr)
                 if(t):
                                         
                     operands_str = idaapi.tag_remove(t)
                     operands = operands_str.replace(",", "").split()
-                                        
+                    
+                    #idc.msg("[d] %s\n" % operands_str) 
+
                     # CP15, the system control coprocessor is adressed
                     if("p15" in operands[1]):
+            
+                        if ("MCR" in opcode):
+                                
+                            comment_mcr_mrc(True, operands[3], addr)  
                         
-                        # c2, c0 
-                        if("c2c0" in operands[3] and operands[4] == "0"):
-                            
-                            idc.msg("[i] TTBR0 setup at %x\n" % (addr))
-                            idc.msg("[d] %s\n" % (operands_str))
-
-                        if("c2c0" in operands[3] and operands[4] == "1"):
-                            
-                            idc.msg("[i] TTBR1 setup at %x\n" % (addr))
-                            idc.msg("[d] %s\n" % (operands_str))
-                            
+                        else:
+                            comment_mcr_mrc(False, operands[3], addr)            
+   
             addr = idc.next_head(addr)
 
     return
 
 # find all MRC with write to CP15 etc. - looking for MMU setup
 def scan_for_mrc(target_seg="MAIN_file"):
+    
+    idc.msg("[i] trying to identify MMU related opcodes in %s\n" % target_seg) 
         
     seg_t = get_segment_boundaries(target_seg)
     
@@ -288,4 +513,4 @@ if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running mpu in standalone mode\n")
     find_hw_init()
 
-#scan_for_mrc()
+    scan_for_mrc()

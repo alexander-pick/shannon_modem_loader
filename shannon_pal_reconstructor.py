@@ -23,9 +23,9 @@ import os
 # these to find the task table. This could be done in a much simpler fashion by searching
 # for PALTskTm and work from there, but using the heuristic below a couple of func refs
 # will be reconstructed and named which are quite important for future analysis
-def find_basic_pal_functions():
+def find_pal_msg_funcs():
 
-    idc.msg("[i] trying to identify some important pal functions and tasks\n")
+    idc.msg("[i] trying to identify PAL message related functions\n")
 
     # search only in main to avoid unnecessary long runtimes
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
@@ -75,7 +75,6 @@ def find_basic_pal_functions():
 
         find_pal_msg_init(pal_MsgSendTo_addr)
 
-    find_pal_init()
 
 # try to find pal_MsgInit() and a few others along
 def find_pal_msg_init(pal_MsgSendTo_addr):
@@ -140,6 +139,8 @@ def find_pal_msg_init(pal_MsgSendTo_addr):
 # try to find pal_Init()
 def find_pal_init():
     
+    idc.msg("[i] trying to identify PAL init and tasks\n")
+   
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
     
     pal_init_addr = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "UpTimer Init")
@@ -308,4 +309,4 @@ def identify_task_init(tbl_offset):
 #for debugging purpose export SHANNON_WORKFLOW="NO"
 if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running pal reconstruct in standalone mode\n")
-    find_basic_pal_functions()
+    find_pal_msg_funcs()
