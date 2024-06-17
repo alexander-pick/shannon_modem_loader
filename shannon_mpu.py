@@ -301,7 +301,7 @@ def comment_cpsr(value, addr):
         else:
             comment += "0 "+description+"\n"
 
-    idaapi.set_cmt(addr, comment, 1)
+    idaapi.set_cmt(addr, comment, 0)
 
 # this tries to find the MRC opcodes required for setting up the MMU
 # we are looking for a write to SCTLR
