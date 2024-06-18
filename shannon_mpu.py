@@ -360,6 +360,10 @@ def validate_mmu_candidate(bl_target):
 
                     # CP15, the system control coprocessor is adressed
                     if("p15" in operands[1]):
+                        
+                        if(len(operands) < 5):
+                            idc.msg("[i] MCR/MRC operands error at %x\n" % addr)
+                            continue
             
                         if ("MCR" in opcode):
                                 

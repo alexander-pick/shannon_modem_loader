@@ -15,7 +15,6 @@ import ida_nalt
 import ida_segment
 
 import shannon_generic
-import shannon_funcs
 
 import os
 
