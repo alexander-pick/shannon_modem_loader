@@ -363,6 +363,7 @@ def validate_mmu_candidate(bl_target):
                         
                         if(len(operands) < 5):
                             idc.msg("[i] MCR/MRC operands error at %x\n" % addr)
+                            addr = idc.next_head(addr)
                             continue
             
                         if ("MCR" in opcode):
