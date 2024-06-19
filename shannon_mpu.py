@@ -199,11 +199,14 @@ def comment_mcr_mrc(read_write, operand, opcode, addr):
     
         if(opcode == 2):
             idaapi.set_cmt(addr, "Translation Table Base Control Register (TTBCR), controls the use of TTBR0 and TTBR1 - "+op, 0)
+            idc.msg("[i] MMU - TTBCR operation at %x\n" % (addr))
             return                       
 
     # Domain Access Control Register
     if("c3c" in operand):
         idaapi.set_cmt(addr, "Domain Access Control Register - "+op, 0)
+        if(read_write):
+            idc.msg("[i] MMU - DACR write at %x\n" % (addr))      
         return   
 
     # Fault Status Registers
@@ -345,7 +348,7 @@ def validate_mmu_candidate(bl_target):
                 if ("CPSR" in cpsr_str):
                     comment_cpsr(cpsr_value, addr)
                                     
-            if("MCR" in opcode or "MRC" in opcode):
+            if("MCR" == opcode or "MRC" == opcode):
                 
                 #idc.msg("[d] MCR/MRC: %x\n" % addr) 
             
@@ -354,7 +357,7 @@ def validate_mmu_candidate(bl_target):
                 if(t):
                                         
                     operands_str = idaapi.tag_remove(t)
-                    operands = operands_str.replace(",", "").split()
+                    operands = operands_str.replace(",", "").replace(";","").split()
                     
                     #idc.msg("[d] %s\n" % operands_str) 
 
@@ -367,12 +370,11 @@ def validate_mmu_candidate(bl_target):
                             continue
             
                         if ("MCR" in opcode):
-                                
-                            comment_mcr_mrc(True, operands[3], operands[4], addr)  
+                            comment_mcr_mrc(True, operands[3], int(operands[4]), addr)  
                         
                         else:
                             
-                            comment_mcr_mrc(False, operands[3], operands[4], addr)            
+                            comment_mcr_mrc(False, operands[3], int(operands[4]), addr)            
    
             addr = idc.next_head(addr)
 
@@ -512,4 +514,4 @@ if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running mpu in standalone mode\n")
     find_hw_init()
 
-    scan_for_mrc()
+scan_for_mrc()
