@@ -514,4 +514,4 @@ if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running mpu in standalone mode\n")
     find_hw_init()
 
-scan_for_mrc()
+    scan_for_mrc()
