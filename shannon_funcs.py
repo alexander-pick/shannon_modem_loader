@@ -213,3 +213,33 @@ def function_find_tail(addr, stack_err):
                         continue
 
     return None
+
+# simple mangler
+# if not mangled, all the :: and stuff get's lost if setting the name
+def mangle_name(name):
+    
+    name_len = len(name)
+    
+    parts = name.split("::")
+    
+    mangled_name = "_Z"
+
+    if(len(parts) > 1): 
+        
+        first_part = True
+        
+        for part in parts:
+            
+            if first_part:
+                mangled_name += "N"
+                first_part = False
+                
+            mangled_name += str(len(part))+str(part)
+
+    else:
+        
+        mangled_name += str(name_len) + name
+        
+    mangled_name += "E"
+        
+    return mangled_name

@@ -58,8 +58,13 @@ def create_name(ea, name):
 
         if (func_start != idaapi.BADADDR):
             if (len(name) > 8):
-                ida_name.set_name(func_start, shannon_funcs.function_find_name(
-                    name), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
+                                               
+                if("::" in name):
+                    func_name = shannon_funcs.mangle_name(name)
+                else:   
+                    func_name = shannon_funcs.function_find_name(name)
+
+                ida_name.set_name(func_start, func_name, ida_name.SN_NOCHECK | ida_name.SN_FORCE)
             else:
                 idc.msg("[e] %x: function name too short: %s\n" %
                         (func_start, name))

@@ -16,6 +16,7 @@ import ida_expr
 import ida_struct
 import ida_kernwin
 import ida_segment
+import ida_ida
 
 import struct
 
@@ -86,7 +87,12 @@ def load_file(fd, neflags, format):
     idc.process_config_line("ARM_REGTRACK_MAX_XREFS = 0")
 
     # disable Coagulate and colapse
-    idc.process_config_line("ANALYSIS = 0x9bff9ff7ULL ")
+    idc.process_config_line("ANALYSIS = 0x9bff9ff7ULL")
+
+    # demangle names
+    idc.process_config_line("DemangleNames = 1")
+    # check the gcc 3.x name box if not set
+    ida_ida.inf_set_demnames(ida_ida.inf_get_demnames() | idaapi.DEMNAM_GCC3)
 
     if (neflags & idaapi.NEF_RELOAD != 0):
         return 1

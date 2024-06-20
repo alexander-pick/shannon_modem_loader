@@ -142,9 +142,11 @@ def restore_ss_names():
 
                 if (func_start != idaapi.BADADDR):
 
-                    if (len(func_name_str) > 8):
-                        idaapi.set_name(
-                            func_start, shannon_funcs.function_find_name(func_name_str))
+                    if (len(func_name_str) > 8):    
+
+                        func_name = shannon_funcs.function_find_name(func_name_str)       
+
+                        idaapi.set_name(func_start, func_name)
                     else:
                         idc.msg("[e] %x: function name too short: %s" %
                                 (func_start, func_name_str))
@@ -171,5 +173,5 @@ def restore_ss_names():
 #for debugging purpose export SHANNON_WORKFLOW="NO"
 if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running names in standalone mode")
-    restore_ss_names()
-    restore_cpp_names()
+restore_ss_names()
+restore_cpp_names()
