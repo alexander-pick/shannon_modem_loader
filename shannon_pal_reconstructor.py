@@ -346,5 +346,4 @@ def identify_task_init(tbl_offset):
 if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running pal reconstruct in standalone mode\n")
     find_pal_msg_funcs()
-
-find_pal_init()
+    find_pal_init()
