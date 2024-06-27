@@ -146,8 +146,6 @@ def find_pal_init():
 
     if (pal_task_man != idaapi.BADADDR):
         
-        idc.msg("[i] pal_TaskMngrInit(): %x\n" % pal_task_man)
-
         func_start = idc.get_func_attr(pal_task_man, idc.FUNCATTR_START)
         func_end = idc.get_func_attr(pal_task_man, idc.FUNCATTR_END)
 
@@ -185,8 +183,64 @@ def validate_if_dm_trace_log(bl_target):
         idc.msg("[i] dm_TraceMsg(): %x\n" % bl_target)
         ida_name.set_name(bl_target, "dm_TraceMsg", ida_name.SN_NOCHECK)
 
+def find_task_desc_tbl_new(task_func_start, task_func_end):
+    
+    idc.msg("[i] table discovery failed, attemping discovery for 5G modems\n")
+    
+    task_func_cur = task_func_start
+
+    while (1):
+
+        task_func_cur = idc.next_head(task_func_cur)
+        task_opcode = ida_ua.ua_mnem(task_func_cur)
+            
+        if (task_opcode == None):
+            continue
+
+        if ("BL" in task_opcode):
+            
+            xref = next(idautils.CodeRefsFrom(task_func_cur, 0))
+            task_list_opcode = ida_ua.ua_mnem(xref)
+            
+            if ("MOV" in task_list_opcode):
+                
+                ida_name.set_name(xref, "pal_getTaskTbl", ida_name.SN_NOCHECK)
+                
+                target_ref = idc.get_operand_value(xref, 1)
+                                
+                if(target_ref == None or target_ref == 0x0):
+                    idc.msg("[e] cannot get operand 1 at %x\n" % xref)
+                    continue
+                
+                #tbl_offset = int.from_bytes(target_ref, "little")
+
+                ida_name.set_name(target_ref, "pal_TaskDescTbl", ida_name.SN_NOCHECK)
+                
+                if(target_ref != idaapi.BADADDR and target_ref != 0x0):
+
+                    idc.msg("[i] pal_TaskDescTbl(): %x\n" % target_ref)
+                    
+                    struct_id = ida_struct.get_struc_id("task_struct")
+                    sptr = ida_struct.get_struc(struct_id)
+                    
+                    mt = ida_nalt.opinfo_t()
+                    # 0x1f8 - 0x118 = 0xE0 // new - old
+                    ida_struct.add_struc_member(sptr, "padding_2", -1, idaapi.FF_BYTE, mt, 0xE0)
+
+                    tasks = identify_task_init(target_ref+0X28) #40d
+
+                    return tasks
+
+                else:
+
+                    return -1
+     
+        # bailout
+        if (task_func_cur >= task_func_end):
+            return -1
+            
+
 # step 6 - find the second LDR in the function. It is the TaskDescTbl
-# TODO - only works for older modem versions, need fix for new
 def find_task_desc_tbl(task_func_start, task_func_end):
 
     task_func_cur = task_func_start
@@ -211,25 +265,32 @@ def find_task_desc_tbl(task_func_start, task_func_end):
                 ida_name.set_name(
                     tbl_offset, "pal_TaskDescTbl", ida_name.SN_NOCHECK)
 
-                idc.msg("[i] pal_TaskDescTbl(): %x\n" % tbl_offset)
+                if(tbl_offset != idaapi.BADADDR):
 
-                tasks = identify_task_init(tbl_offset)
-
-                if (tasks < 5):
-                    #retry the short version by deleting gap_14 (padding)
-
-                    struct_id = ida_struct.get_struc_id("task_struct")
-                    sptr = ida_struct.get_struc(struct_id)
-                    str_ptr = ida_struct.get_member_by_name(sptr, "gap_14")
-                    idaapi.del_struc_member(sptr, str_ptr.soff)
+                    idc.msg("[i] pal_TaskDescTbl(): %x\n" % tbl_offset)
 
                     tasks = identify_task_init(tbl_offset)
+
+                    if (tasks < 5):
+                        #retry the short version by deleting the padding
+
+                        struct_id = ida_struct.get_struc_id("task_struct")
+                        sptr = ida_struct.get_struc(struct_id)
+                        str_ptr = ida_struct.get_member_by_name(sptr, "padding")
+                        idaapi.del_struc_member(sptr, str_ptr.soff)
+
+                        tasks = identify_task_init(tbl_offset)
+                    
+                    return tasks
+
+                else:
+                    find_task_desc_tbl_new(task_func_start, task_func_end)
 
             ldr_cnt += 1
 
         # bailout
         if (task_func_cur >= task_func_end):
-            break
+            return -1
 
 
 def identify_task_init(tbl_offset):
@@ -286,4 +347,4 @@ if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running pal reconstruct in standalone mode\n")
     find_pal_msg_funcs()
 
-#find_pal_init()
+find_pal_init()

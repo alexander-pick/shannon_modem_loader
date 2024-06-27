@@ -71,7 +71,7 @@ If you look at a crash dump or find the respective functionality inside `modem.b
 
 Around the S20 release a few things changed, Shannon basebands were upgraded from Cortex-R to Cortex-A. During this time additional stack checks were introduced as well. But stack cookies seem to be static, given the random values used it's unclear if the developers really understood the reason for this mitigation. 
 
-Another new addition from the core change was the MMU (Memory Management Unit). The MMU would technically provide domain security and advanced management capabilities, while the MPU only offers basic mapping and protection. Sadly the advanced MMU features are disabled by setting the translation table to zero and domain security to minus one. The only image I could find during testing making minimal use of the MMU was a Tensor one. ShannonOS uses a continuous address space until today. 
+Another new addition from the core change was the MMU (Memory Management Unit). The MMU would technically provide domain security and advanced management capabilities, while the MPU only offers basic mapping and protection. The advanced MMU features are disabled by setting the translation table to zero and domain security to minus one for a lot of the earlier images. Tensor and recent S22+ images seem to use the MMU much more. ShannonOS uses a continuous address space until today. 
 
 The loader will identify MRC/MCR instructions in the image and comment them for you, see `shannon_mpu.py` for details.
 
