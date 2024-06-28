@@ -4,6 +4,8 @@ This is a simple firmware loader plugin to load Samsung Exynos "Shannon" modem i
 
 The loader should work with most Samsung Exynos modem images containing a TOC header including crash dumps. Compatible images can be found e.g. in updates for Exynos based phones. The typical file name is `modem.bin`. Sometimes the images are compressed using lz4. Uncompress them before loading, using lz4 utility present on most Linux distros. 
 
+The loader was tested with a larger set of images from ancient (e.g. G8700, S7) to new (e.g. S22, S24). Loading 2024 build images works fine including task identification.
+
 # How To Use This Loader
 
 To use the loader just install `shannon_load.py` inside your [IDA Pro](https://hex-rays.com/ida-pro/)'s loader folder and the rest of the python files into the [IDA Pro](https://hex-rays.com/ida-pro/) python folder. `install.sh` will assist you with this task, if you want to do it manually please take a look inside. For [IDA Pro](https://hex-rays.com/ida-pro/) 8.3 and 8.4 the default installation directory should be detected by default. Otherwise you can specify the installation directory as the first parameter to the script. 
@@ -29,7 +31,7 @@ The loader will recognize a TOC based Shannon modem binary and load it. After ba
 * identify the scatter loader
 * perform scatter loading and decompression ([LZ77-like](https://developer.arm.com/documentation/dui0474/j/linker-optimization-features/how-compression-is-applied) compression scheme)
 * find important platform abstraction layer functions
-* identify and label all task init functions
+* identify and label all task init functions 
 
 After that your `idb` should be ready to go so you can focus on reverse engineering the modem.
 
@@ -49,7 +51,7 @@ The name "Shannon" is a homage to [Claude Shannon](https://en.wikipedia.org/wiki
 
 The RTOS used by Samsung for Shannon ICs is called ShannonOS. I believe that ShannonOS is a re-branded Nucleus core. Old versions of CMC even identify it by the original name. The system is build using the ARM RVCT compiler with slowly increasing version numbers.
 
-On top of the RTOS, Samsung created a Platform Abstraction Layer (PAL) as interface to the lower level functionality operating the hardware. Platform abstraction layer are a common design pattern found in a lot of embedded development projects. Typically the hardware related layer would be called Hardware Abstraction Layer (HAL) but there is no indication Samsung calls it like this. Possibly because the low level / core functionality was taken from Nucleus and never part of the initial inhouse design.
+On top of the RTOS, Samsung created a Platform Abstraction Layer (PAL) as interface to the lower level functionality operating the hardware. Platform abstraction layer are a common design pattern found in a lot of embedded development projects. Typically the hardware related layer would be called Hardware Abstraction Layer (HAL). In old modems the HAL was never explictly mentioned or labeled as such, new modems (2023 onwards) even have HAL management tasks and a clear seperation. Possibly because the low level / core functionality was taken from Nucleus and never part of the initial inhouse design. 
 
 Inside the PAL, functionality like task management and other higher level management operations are run. The most interesting functionality of the baseband such as packet parsers for GSM/LTE/5G or logging (DM) etc. are run in individual tasks scheduled by the PAL. The loader will identify the individual tasks for you and label them, see `shannon_pal_reconstructor.py` for details.
 
