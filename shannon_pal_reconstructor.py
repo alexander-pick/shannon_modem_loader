@@ -266,7 +266,7 @@ def find_task_desc_tbl(task_func_start, task_func_end):
                 ida_name.set_name(
                     tbl_offset, "pal_TaskDescTbl", ida_name.SN_NOCHECK)
 
-                if(tbl_offset != idaapi.BADADDR):
+                if(tbl_offset != idaapi.BADADDR and ida_bytes.is_loaded(tbl_offset)):
 
                     idc.msg("[i] pal_TaskDescTbl(): %x\n" % tbl_offset)
 
