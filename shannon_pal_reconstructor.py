@@ -15,6 +15,7 @@ import ida_nalt
 import ida_segment
 
 import shannon_generic
+import shannon_funcs
 
 import os
 
@@ -323,17 +324,26 @@ def identify_task_init(tbl_offset):
         # break early if we met an undefined entry
         if (entry_offset == 0x0):
             break
-
-        task_entry_func_start = idc.get_func_attr(
-            entry_offset, idc.FUNCATTR_START)
+        
+        if (not idc.is_code(idc.get_full_flags(entry_offset))):
+            ida_ua.create_insn(entry_offset)
+        
+        #check again, if no code, realign
+        if (not idc.is_code(idc.get_full_flags(entry_offset))):
+            entry_offset = entry_offset - 1 # thumb
+            ida_ua.create_insn(entry_offset)
+        
+        # realign function if needed   
+        task_entry_func_start = idc.get_func_attr(entry_offset, idc.FUNCATTR_START)
 
         if (task_entry_func_start != idaapi.BADADDR):
+            shannon_funcs.function_find_boundaries(task_entry_func_start)
 
-            idc.msg("[i] found task init for %s at %x\n" %
-                    (str(task_name_str.decode()), task_entry_func_start))
+        idc.msg("[i] found task init for %s at %x\n" %
+                (str(task_name_str.decode()), entry_offset))
 
-            ida_name.set_name(task_entry_func_start, "pal_TaskInit_" + str(
-                task_name_str.decode()), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
+        ida_name.set_name(entry_offset, "pal_TaskInit_" + str(
+            task_name_str.decode()), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
 
         tbl_offset += struct_size
 
