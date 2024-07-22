@@ -1,6 +1,6 @@
 # Simple Shannon Baseband Loader for IDA Pro
 
-This is a simple firmware loader plugin to load Samsung Exynos "Shannon" modem images in [IDA Pro](https://hex-rays.com/ida-pro/ or [IDA Home ARM](https://hex-rays.com/ida-home/)). This loader is designed to perform the most important taks to load a Shannon image, furthermore it should be easy to understand and customize. 
+This is a simple firmware loader plugin to load Samsung Exynos "Shannon" modem images in [IDA Pro](https://hex-rays.com/ida-pro/) or [IDA Home ARM](https://hex-rays.com/ida-home/). This loader is designed to perform the most important taks to load a Shannon image, furthermore it should be easy to understand and customize. 
 
 The loader should work with most Samsung Exynos modem images containing a TOC header including crash dumps. Compatible images can be found e.g. in updates for Exynos based phones. The typical file name is `modem.bin`. Sometimes the images are compressed using lz4. Uncompress them before loading, using lz4 utility present on most Linux distros. 
 
@@ -33,7 +33,7 @@ The loader will recognize a TOC based Shannon modem binary and load it. After ba
 * find important platform abstraction layer functions
 * identify and label all task init functions 
 
-After that your `idb` should be ready to go so you can focus on reverse engineering the modem.
+After that your `idb` or `i64` should be ready to go so you can focus on reverse engineering the modem.
 
 # About Samsung Shannon 
 
