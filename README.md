@@ -1,6 +1,6 @@
 # Simple Shannon Baseband Loader for IDA Pro
 
-This is a simple firmware loader plugin to load Samsung Exynos "Shannon" modem images in [IDA Pro](https://hex-rays.com/ida-pro/). This loader is designed to perform the most important taks to load a Shannon image, furthermore it should be easy to understand and customize. 
+This is a simple firmware loader plugin to load Samsung Exynos "Shannon" modem images in [IDA Pro](https://hex-rays.com/ida-pro/ or [IDA Home ARM](https://hex-rays.com/ida-home/)). This loader is designed to perform the most important taks to load a Shannon image, furthermore it should be easy to understand and customize. 
 
 The loader should work with most Samsung Exynos modem images containing a TOC header including crash dumps. Compatible images can be found e.g. in updates for Exynos based phones. The typical file name is `modem.bin`. Sometimes the images are compressed using lz4. Uncompress them before loading, using lz4 utility present on most Linux distros. 
 
@@ -8,11 +8,11 @@ The loader was tested with a larger set of images from ancient (e.g. G8700, S7) 
 
 # How To Use This Loader
 
-To use the loader just install `shannon_load.py` inside your [IDA Pro](https://hex-rays.com/ida-pro/)'s loader folder and the rest of the python files into the [IDA Pro](https://hex-rays.com/ida-pro/) python folder. `install.sh` will assist you with this task, if you want to do it manually please take a look inside. For [IDA Pro](https://hex-rays.com/ida-pro/) 8.3 and 8.4 the default installation directory should be detected by default. Otherwise you can specify the installation directory as the first parameter to the script. 
+To use the loader just install `shannon_load.py` inside your [IDA Pro](https://hex-rays.com/ida-pro/) or [IDA Home ARM](https://hex-rays.com/ida-home/) loader folder and the other python files into the IDA python folder. `install.sh` will assist you with this task, if you want to do it manually please take a look inside. For [IDA Pro](https://hex-rays.com/ida-pro/) 8.3 and 8.4 and [IDA Home ARM](https://hex-rays.com/ida-home/) the default installation directory should be detected by default. Otherwise you can specify the installation directory as the first parameter to the script. 
 
 `./install.sh ~/your-ida-installdir/`
 
-Once installed open a `modem.bin` file extracted from an OTA update in [IDA Pro](https://hex-rays.com/ida-pro/). The loader should detect the TOC format and load the image accordingly. The postprocessor script will add additional segment information after the initial analysis has finished. Adding the segments right from the start will confuse and slow down the analysis process.
+Once installed open a `modem.bin` file extracted from an OTA update in IDA. The loader should detect the TOC format and load the image accordingly. The postprocessor script will add additional segment information after the initial analysis has finished. Adding the segments right from the start will confuse and slow down the analysis process.
 
 The postprocessing module does most of the magic and it will take a bit to run, please be patient. All steps the post processor performs are in the individual files copied to `<IDAHOME>/python/`. You can use them as individual python modules if needed. See the post processor for details. A complete analysis of a modem image takes about 30 minutes to complete on average hardware.
 
@@ -79,7 +79,7 @@ The loader will identify MRC/MCR instructions in the image and comment them for 
 
 ## IDA Compatibility And Installation
 
-Tested with [IDA Pro](https://hex-rays.com/ida-pro/) 8.x (8.3 to 8.4 SP2). Might work on versions starting from 7.x using the revamped idapython API. 
+Tested with [IDA Pro](https://hex-rays.com/ida-pro/) 8.x (8.3 to 8.4 SP2) as well as [IDA Home ARM](https://hex-rays.com/ida-home/). Might work on versions starting from 7.x using the revamped idapython API. 
 
 Since I work on Linux the `install.sh` is a bash script. If you are using OSX or Windows you can perform the installation manually by copying the files in their respective directories to install the loader manually:
 
