@@ -96,13 +96,16 @@ def load_file(fd, neflags, format):
 
     if (neflags & idaapi.NEF_RELOAD != 0):
         return 1
+    
+    # make sure the idb is seen as 32 bit even if opened in ida64
+    idaapi.inf_set_app_bitness(32)
 
     # this is needed to clear the output window
     output = ida_kernwin.find_widget("Output window")
     ida_kernwin.activate_widget(output, True)
     idaapi.process_ui_action("msglist:Clear")
 
-    idc.msg("\nIDA Pro 8.x+\n")
+    idc.msg("\nIDA Pro and Home 8.x+\n")
     idc.msg('      /\ \                                                    ' + "\n")
     idc.msg('   ___\ \ \___      __       __      __     ___      __       ' + "\n")
     idc.msg('  /`,__| \  _ `\  /`__`\   /` _`\  /` _`\  / __`\  /` _`\     ' + "\n")
