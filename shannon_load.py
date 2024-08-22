@@ -106,13 +106,13 @@ def load_file(fd, neflags, format):
     idaapi.process_ui_action("msglist:Clear")
 
     idc.msg("\nIDA Pro and Home 8.x+\n")
-    idc.msg('      /\ \                                                    ' + "\n")
-    idc.msg('   ___\ \ \___      __       __      __     ___      __       ' + "\n")
-    idc.msg('  /`,__| \  _ `\  /`__`\   /` _`\  /` _`\  / __`\  /` _`\     ' + "\n")
-    idc.msg(' /\__, `\ \ \ \ \/\ \_\.\_/\ \/\ \/\ \/\ \/\ \_\ \/\ \/\ \    ' + "\n")
-    idc.msg(' \/\____/\ \_\ \_\ \__/.\_\ \_\ \_\ \_\ \_\ \____/\ \_\ \_\   ' + "\n")
-    idc.msg('  \/___/  \/_/\/_/\/__/\/_/\/_/\/_/\/_/\/_/\/___/  \/_/\/_/   ' + "\n")
-    idc.msg('                                               Modem Loader   ' + "\n\n")
+    idc.msg(r'      /\ \                                                    ' + "\n")
+    idc.msg(r'   ___\ \ \___      __       __      __     ___      __       ' + "\n")
+    idc.msg(r'  /`,__| \  _ `\  /`__`\   /` _`\  /` _`\  / __`\  /` _`\     ' + "\n")
+    idc.msg(r' /\__, `\ \ \ \ \/\ \_\.\_/\ \/\ \/\ \/\ \/\ \_\ \/\ \/\ \    ' + "\n")
+    idc.msg(r' \/\____/\ \_\ \_\ \__/.\_\ \_\ \_\ \_\ \_\ \____/\ \_\ \_\   ' + "\n")
+    idc.msg(r'  \/___/  \/_/\/_/\/__/\/_/\/_/\/_/\/_/\/_/\/___/  \/_/\/_/   ' + "\n")
+    idc.msg(r'                                               Modem Loader   ' + "\n\n")
     idc.msg("More: https://github.com/alexander-pick/shannon_modem_loader\n\n")
 
     start_offset = 0x20

@@ -38,8 +38,12 @@ if [ -z ${IDADIR} ]; then
     else 
 
         IDADIR=${1}
-        IDABIN=${2}
 
+        if [ -z ${2} ]; then
+            IDABIN=ida
+        else
+            IDABIN=${2}
+        fi
     fi
 
 fi
