@@ -37,7 +37,7 @@ def get_struct(tid):
 
         idc.msg("[e] get_struct(): failed to get struct\n")
 
-        return idaapi.BADADDR
+        return -1
 
 # get member by name
 def get_member_by_name(tif, name):
@@ -97,8 +97,6 @@ def get_max_offset(tif):
 def add_struc_member(tid, name, offset, flag, typeid, nbytes):
     #shannon_generic.DEBUG("[d] add_struc_member(tid, %s, %x, %x, %x, %d) \n" % (name, offset, flag, typeid, nbytes))
     # if(idaapi.IDA_SDK_VERSION >= 900):
-    idc.add_struc_member(tid, name, offset, flag, typeid, nbytes)
-    # else:
     #     tif = get_struct(tid)
     #     if(tif):
     #         sid = idc.get_struc_id(tif.name)
@@ -106,6 +104,8 @@ def add_struc_member(tid, name, offset, flag, typeid, nbytes):
     #         return
     #     else:
     #         idc.msg("[e] add_struc_member(): connot add member, unknown tif\n")
+    # else:
+    idc.add_struc_member(tid, name, offset, flag, typeid, nbytes)
 
 # ARM scatter structure
 def add_scatter_struct():

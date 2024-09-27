@@ -16,8 +16,8 @@ import ida_nalt
 
 import shannon_funcs
 
-# uncomment for debug out
-is_debug = True
+# set True for debug mode
+is_debug = False
 
 def DEBUG(msg):
     global is_debug

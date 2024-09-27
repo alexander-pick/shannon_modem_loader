@@ -223,7 +223,7 @@ def find_task_desc_tbl_new(task_func_start, task_func_end):
 
                     struct_id = idc.get_struc_id("task_struct")
 
-                    mt = ida_nalt.opinfo_t()
+                    mt = -1
                     # 0x1f8 - 0x118 = 0xE0 // new - old
                     shannon_structs.add_struc_member(
                         struct_id, "padding_2", -1, idaapi.FF_BYTE, mt, 0xE0)
