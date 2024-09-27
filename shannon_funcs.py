@@ -68,7 +68,7 @@ def split_functions():
 
             if func_o is not None:
                 if (func_o.end_ea != prev_head or func_o.end_ea != xref.frm):
-                    # idc.msg("[d] differing boundaries for function at %x, setting end to %x, was %x\n" % (
+                    # shannon_generic.DEBUG("[d] differing boundaries for function at %x, setting end to %x, was %x\n" % (
                     #     func_start, prev_head, func_end))
                     func_o.end_ea = prev_head
                     ida_funcs.update_func(func_o)
@@ -120,7 +120,7 @@ def scan_main():
                     # avoid defining the tail as own functions
                     if (addr != tail_offset):
                         ida_funcs.add_func(addr, tail_offset)
-                        # idc.msg("[d] found a function %x-%x\n" % (addr, tail_offset))
+                        # shannon_generic.DEBUG("[d] found a function %x-%x\n" % (addr, tail_offset))
 
         addr = idc.next_head(addr)
 
@@ -130,14 +130,14 @@ def function_find_boundaries(addr):
 
     stack_err = idc.get_name_ea_simple("stack_err")
 
-    #idc.msg("[d] stack_err: %x\n" % stack_err)
+    #shannon_generic.DEBUG("[d] stack_err: %x\n" % stack_err)
 
     if (stack_err == idaapi.BADADDR):
         return False
 
     while (1):
 
-        #idc.msg("[d] function_find_boundaries() - cur: %x\n" % addr)
+        #shannon_generic.DEBUG("[d] function_find_boundaries() - cur: %x\n" % addr)
 
         opcode = ida_ua.ua_mnem(addr)
 
@@ -148,7 +148,7 @@ def function_find_boundaries(addr):
 
             opcode = ida_ua.ua_mnem(prev_addr)
             if (opcode == None):
-                #idc.msg("[d] no opcode at %x\n" % (prev_addr))
+                #shannon_generic.DEBUG("[d] no opcode at %x\n" % (prev_addr))
                 break
 
             if ("PUSH" in opcode):
@@ -164,7 +164,7 @@ def function_find_boundaries(addr):
                         return True
             else:
                 # bailout or we run forever
-                #idc.msg("[d] not a PUSH, bailout at %x\n" % (prev_addr))
+                #shannon_generic.DEBUG("[d] not a PUSH, bailout at %x\n" % (prev_addr))
                 return False
 
         addr = idc.prev_head(addr)

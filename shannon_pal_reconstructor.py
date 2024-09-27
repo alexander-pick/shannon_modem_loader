@@ -10,12 +10,12 @@ import idautils
 import ida_bytes
 import ida_name
 import ida_ua
-import ida_struct
 import ida_nalt
 import ida_segment
 
 import shannon_generic
 import shannon_funcs
+import shannon_structs
 
 import os
 
@@ -146,7 +146,7 @@ def find_pal_init():
     pal_task_man = shannon_generic.get_first_ref(pal_task_man)
 
     if (pal_task_man != idaapi.BADADDR):
-        
+
         func_start = idc.get_func_attr(pal_task_man, idc.FUNCATTR_START)
         func_end = idc.get_func_attr(pal_task_man, idc.FUNCATTR_END)
 
@@ -154,23 +154,23 @@ def find_pal_init():
 
             idc.msg("[i] pal_TaskMngrInit(): %x\n" % func_start)
             ida_name.set_name(func_start, "pal_TaskMngrInit", ida_name.SN_NOCHECK)
-            
+
             find_task_desc_tbl(func_start, func_end)
-            
+
             for xref in idautils.XrefsTo(func_start, 0):
-                
+
                 pal_init_addr = idc.get_func_attr(xref.frm, idc.FUNCATTR_START)
-        
-                if(pal_init_addr != idaapi.BADADDR):
+
+                if (pal_init_addr != idaapi.BADADDR):
                     idc.msg("[i] pal_Init(): %x\n" % pal_init_addr)
                     ida_name.set_name(pal_init_addr, "pal_Init", ida_name.SN_NOCHECK)
 
                     metrics = shannon_generic.get_metric(pal_init_addr)
-    
+
                     for branch in metrics[6]:
                         first_operand = idc.get_operand_value(branch, 0)
                         validate_if_dm_trace_log(first_operand)
-                
+
                     return
     return
 
@@ -185,61 +185,61 @@ def validate_if_dm_trace_log(bl_target):
         ida_name.set_name(bl_target, "dm_TraceMsg", ida_name.SN_NOCHECK)
 
 def find_task_desc_tbl_new(task_func_start, task_func_end):
-    
+
     idc.msg("[i] table discovery failed, attemping discovery for 5G modems\n")
-    
+
     task_func_cur = task_func_start
 
     while (1):
 
         task_func_cur = idc.next_head(task_func_cur)
         task_opcode = ida_ua.ua_mnem(task_func_cur)
-            
+
         if (task_opcode == None):
             continue
 
         if ("BL" in task_opcode):
-            
+
             xref = next(idautils.CodeRefsFrom(task_func_cur, 0))
             task_list_opcode = ida_ua.ua_mnem(xref)
-            
+
             if ("MOV" in task_list_opcode):
-                
+
                 ida_name.set_name(xref, "pal_getTaskTbl", ida_name.SN_NOCHECK)
-                
+
                 target_ref = idc.get_operand_value(xref, 1)
-                                
-                if(target_ref == None or target_ref == 0x0):
+
+                if (target_ref == None or target_ref == 0x0):
                     idc.msg("[e] cannot get operand 1 at %x\n" % xref)
                     continue
-                
+
                 #tbl_offset = int.from_bytes(target_ref, "little")
 
                 ida_name.set_name(target_ref, "pal_TaskDescTbl", ida_name.SN_NOCHECK)
-                
-                if(target_ref != idaapi.BADADDR and target_ref != 0x0):
+
+                if (target_ref != idaapi.BADADDR and target_ref != 0x0):
 
                     idc.msg("[i] pal_TaskDescTbl(): %x\n" % target_ref)
-                    
-                    struct_id = ida_struct.get_struc_id("task_struct")
-                    sptr = ida_struct.get_struc(struct_id)
-                    
+
+                    struct_id = idc.get_struc_id("task_struct")
+
                     mt = ida_nalt.opinfo_t()
                     # 0x1f8 - 0x118 = 0xE0 // new - old
-                    ida_struct.add_struc_member(sptr, "padding_2", -1, idaapi.FF_BYTE, mt, 0xE0)
+                    shannon_structs.add_struc_member(
+                        struct_id, "padding_2", -1, idaapi.FF_BYTE, mt, 0xE0)
 
-                    tasks = identify_task_init(target_ref+0X28) #40d
+                    tasks = identify_task_init(target_ref + 0X28)  # 40d
 
                     return tasks
 
                 else:
 
                     return -1
-     
+
         # bailout
         if (task_func_cur >= task_func_end):
             return -1
-            
+
 
 # step 6 - find the second LDR in the function. It is the TaskDescTbl
 def find_task_desc_tbl(task_func_start, task_func_end):
@@ -254,7 +254,7 @@ def find_task_desc_tbl(task_func_start, task_func_end):
 
         # skip text chunks inside function
         if (task_opcode == None):
-            #idc.msg("[d] error finding pal_TaskDescTbl() at %x\n" % task_func_cur)
+            #shannon_generic.DEBUG("[d] error finding pal_TaskDescTbl() at %x\n" % task_func_cur)
             continue
 
         if ("LDR" in task_opcode):
@@ -266,7 +266,7 @@ def find_task_desc_tbl(task_func_start, task_func_end):
                 ida_name.set_name(
                     tbl_offset, "pal_TaskDescTbl", ida_name.SN_NOCHECK)
 
-                if(tbl_offset != idaapi.BADADDR and ida_bytes.is_loaded(tbl_offset)):
+                if (tbl_offset != idaapi.BADADDR and ida_bytes.is_loaded(tbl_offset)):
 
                     idc.msg("[i] pal_TaskDescTbl(): %x\n" % tbl_offset)
 
@@ -275,13 +275,14 @@ def find_task_desc_tbl(task_func_start, task_func_end):
                     if (tasks < 5):
                         #retry the short version by deleting the padding
 
-                        struct_id = ida_struct.get_struc_id("task_struct")
-                        sptr = ida_struct.get_struc(struct_id)
-                        str_ptr = ida_struct.get_member_by_name(sptr, "padding")
-                        idaapi.del_struc_member(sptr, str_ptr.soff)
+                        struct_id = idc.get_struc_id("task_struct")
+                        sptr = shannon_structs.get_struct(struct_id)
+
+                        str_ptr = shannon_structs.get_offset_by_name(sptr, "padding")
+                        idc.del_struc_member(struct_id, str_ptr)
 
                         tasks = identify_task_init(tbl_offset)
-                    
+
                     return tasks
 
                 else:
@@ -299,9 +300,12 @@ def identify_task_init(tbl_offset):
     MAX_TASKS = 256
     tasks = 0
 
-    struct_id = ida_struct.get_struc_id("task_struct")
-    struct_size = ida_struct.get_struc_size(struct_id)
-    sptr = ida_struct.get_struc(struct_id)
+    struct_id = idc.get_struc_id("task_struct")
+    struct_size = idc.get_struc_size(struct_id)
+    
+    sptr = shannon_structs.get_struct(struct_id)
+    str_ptr = shannon_structs.get_offset_by_name(sptr, "task_name")
+    entry_ptr = shannon_structs.get_offset_by_name(sptr, "task_entry")
 
     while (tasks < MAX_TASKS):
 
@@ -309,31 +313,28 @@ def identify_task_init(tbl_offset):
 
         ida_bytes.create_struct(tbl_offset, struct_size, struct_id)
 
-        str_ptr = ida_struct.get_member_by_name(sptr, "task_name")
         str_offset = int.from_bytes(ida_bytes.get_bytes(
-            tbl_offset + str_ptr.soff, 4), "little")
+            (tbl_offset + str_ptr), 4), "little")
 
         ida_bytes.create_strlit(str_offset, 0, ida_nalt.STRTYPE_C)
 
         task_name_str = idc.get_strlit_contents(str_offset)
 
-        entry_ptr = ida_struct.get_member_by_name(sptr, "task_entry")
-        entry_offset = int.from_bytes(ida_bytes.get_bytes(
-            tbl_offset + entry_ptr.soff, 4), "little")
+        entry_offset = int.from_bytes(ida_bytes.get_bytes((tbl_offset + entry_ptr), 4), "little")
 
         # break early if we met an undefined entry
         if (entry_offset == 0x0):
             break
-        
+
         if (not idc.is_code(idc.get_full_flags(entry_offset))):
             ida_ua.create_insn(entry_offset)
-        
+
         #check again, if no code, realign
         if (not idc.is_code(idc.get_full_flags(entry_offset))):
-            entry_offset = entry_offset - 1 # thumb
+            entry_offset = entry_offset - 1  # thumb
             ida_ua.create_insn(entry_offset)
-        
-        # realign function if needed   
+
+        # realign function if needed
         task_entry_func_start = idc.get_func_attr(entry_offset, idc.FUNCATTR_START)
 
         if (task_entry_func_start != idaapi.BADADDR):

@@ -11,11 +11,11 @@ import ida_idp
 import ida_bytes
 import idautils
 import ida_name
-import ida_struct
 import ida_funcs
 import ida_auto
 
 import shannon_generic
+import shannon_structs
 
 import os
 
@@ -58,7 +58,7 @@ def create_scatter_tbl(scatterload):
     scatter_tbl = idc.get_operand_value(scatterload, 1)
 
     start_bytes = ida_bytes.get_bytes(scatter_tbl, 4)
-    stop_bytes = ida_bytes.get_bytes(scatter_tbl + 4, 4)
+    stop_bytes = ida_bytes.get_bytes((scatter_tbl + 4), 4)
 
     if (start_bytes == None or stop_bytes == None):
         idc.msg("[e] unable to create scatter table\n")
@@ -71,8 +71,8 @@ def create_scatter_tbl(scatterload):
     scatter_stop = (scatter_stop + scatter_tbl) & 0xFFFFFFFF
     scatter_size = scatter_stop - scatter_start
 
-    struct_id = ida_struct.get_struc_id("scatter")
-    struct_size = ida_struct.get_struc_size(struct_id)
+    struct_id = idc.get_struc_id("scatter")
+    struct_size = idc.get_struc_size(struct_id)
 
     idc.msg("[i] scatter table at %x, size %d, table has %d entries\n" %
             (scatter_start, scatter_size, scatter_size / struct_size))
@@ -97,7 +97,7 @@ def create_scatter_tbl(scatterload):
 
     # make a "unique" list by converting it to a set and back
     op_list = list(set(op_list))
-    
+
     ops = find_scatter_functions(op_list)
     process_scattertbl(scatter_start, scatter_size, ops)
 
@@ -219,24 +219,24 @@ def process_scattertbl(scatter_start, scatter_size, ops):
                 # if it does, at which index of the op list?
                 match index:
                     case 0:
-                        # idc.msg("[d] scatter_null\n")
-                    
+                        # shannon_generic.DEBUG("[d] scatter_null\n")
+
                         # just adding these won't invaldiate any data in it, but allows us to see what
-                        # was supposed to be mapped or zerored out 
+                        # was supposed to be mapped or zerored out
                         if (entry[2] > 0):
                             shannon_generic.add_memory_segment(entry[1], entry[2],
                                                                "SCATTERNULL_" + str(scatter_id),
                                                                "CODE", False)
                     case 1:
-                        # idc.msg("[d] scatter_zero\n")
-                    
+                        # shannon_generic.DEBUG("[d] scatter_zero\n")
+
                         if (entry[2] > 0):
                             shannon_generic.add_memory_segment(entry[1], entry[2],
                                                                "SCATTERZERO_" + str(scatter_id),
                                                                "CODE", False)
                     case 2:
 
-                        # idc.msg("[d] scatter_copy\n")
+                        # shannon_generic.DEBUG("[d] scatter_copy\n")
                         # copy in idb
 
                         if (entry[2] > 0):
@@ -245,8 +245,12 @@ def process_scattertbl(scatter_start, scatter_size, ops):
                             shannon_generic.add_memory_segment(entry[1], entry[2],
                                                                "SCATTER_" + str(scatter_id),
                                                                "CODE", False)
+                            
+                            shannon_generic.DEBUG("[d] src: %x cnt: %d dst: %x " % (entry[0], entry[2], entry[1]))
 
                             chunk = ida_bytes.get_bytes(entry[0], entry[2])
+                            
+                            shannon_generic.DEBUG("len: %s\n" % (len(chunk)))
 
                             ida_bytes.put_bytes(entry[1], chunk)
 
@@ -269,40 +273,37 @@ def process_scattertbl(scatter_start, scatter_size, ops):
 # read and pre-process the scatter table
 def read_scattertbl(scatter_start, scatter_size):
 
-    struct_id = ida_struct.get_struc_id("scatter")
-    struct_size = ida_struct.get_struc_size(struct_id)
-    sptr = ida_struct.get_struc(struct_id)
+    struct_id = idc.get_struc_id("scatter")
+    struct_size = idc.get_struc_size(struct_id)
 
     tbl = []
 
     scatter_offset = scatter_start
+    
+    sptr = shannon_structs.get_struct(struct_id)
+    src_ptr = shannon_structs.get_offset_by_name(sptr, "src")
+    dst_ptr = shannon_structs.get_offset_by_name(sptr, "dst")
+    size_ptr = shannon_structs.get_offset_by_name(sptr, "size")
+    op_ptr = shannon_structs.get_offset_by_name(sptr, "op")
 
     while (scatter_offset < (scatter_start + scatter_size)):
 
         entry = []
 
         ida_bytes.del_items(scatter_offset, 0, struct_size)
-        ida_bytes.create_struct(scatter_offset, struct_size, struct_id)
-
-        src_ptr = ida_struct.get_member_by_name(sptr, "src")
+        ida_bytes.create_struct(scatter_offset, struct_size, struct_id)        
 
         entry.append(int.from_bytes(ida_bytes.get_bytes(
-            scatter_offset + src_ptr.soff, 4), "little"))
-
-        dst_ptr = ida_struct.get_member_by_name(sptr, "dst")
+            (scatter_offset + src_ptr), 4), "little"))
+        
+        entry.append(int.from_bytes(ida_bytes.get_bytes(
+            (scatter_offset + dst_ptr), 4), "little"))        
 
         entry.append(int.from_bytes(ida_bytes.get_bytes(
-            scatter_offset + dst_ptr.soff, 4), "little"))
-
-        size_ptr = ida_struct.get_member_by_name(sptr, "size")
+            (scatter_offset + size_ptr), 4), "little"))
 
         entry.append(int.from_bytes(ida_bytes.get_bytes(
-            scatter_offset + size_ptr.soff, 4), "little"))
-
-        op_ptr = ida_struct.get_member_by_name(sptr, "op")
-
-        entry.append(int.from_bytes(ida_bytes.get_bytes(
-            scatter_offset + op_ptr.soff, 4), "little"))
+            (scatter_offset + op_ptr), 4), "little"))
 
         tbl.append(entry)
 
@@ -351,7 +352,7 @@ def find_scatter():
                             mode_switch += 1
                             continue
 
-                        #idc.msg("[d] second supervisor mode switch found: %x\n" % func_cur)
+                        #shannon_generic.DEBUG("[d] second supervisor mode switch found: %x\n" % func_cur)
 
                         reset_func_cur = func_cur
 
@@ -366,19 +367,19 @@ def find_scatter():
 
                             # scatterload is the first branch in main, right after the crt (reset vector)
                             if ("B" == reset_opcode):
-                                
-                                idc.msg("[d] scatter candidate at %x\n" % reset_func_cur)
-                                
-                                # it's all about beeing flexible ...                                                                
+
+                                shannon_generic.DEBUG("[d] scatter candidate at %x\n" % reset_func_cur)
+
+                                # it's all about beeing flexible ...
                                 b_target = idc.get_operand_value(reset_func_cur, 0)
-                                
+
                                 next_opcode = ida_ua.ua_mnem(b_target)
-                                if(next_opcode == None):
-                                    # idc.msg("[d] error in scatter branch\n")
+                                if (next_opcode == None):
+                                    # shannon_generic.DEBUG("[d] error in scatter branch\n")
                                     return
-                                
-                                if("B" == next_opcode):
-                                    idc.msg("[d] additional jump at %x\n" % b_target)
+
+                                if ("B" == next_opcode):
+                                    shannon_generic.DEBUG("[d] additional jump at %x\n" % b_target)
                                     # new BB jump twice, so we check that here and follow the white rabbit
                                     reset_func_cur = b_target
 
@@ -399,7 +400,7 @@ def find_scatter():
 # after reversing it I think it is LZ77 which is also one of the compressions
 # the ARM linker supports next to RLE
 
-# decompress from src to dst, input buffer cnt - costed me an arm and a leg to 
+# decompress from src to dst, input buffer cnt - costed me an arm and a leg to
 # get it working but it now uncompresses 100% of the buffer and does it correctly
 def scatterload_decompress(src, cnt):
 
@@ -432,9 +433,9 @@ def scatterload_decompress(src, cnt):
 
         # copy x bytes from the source to the destination
         for _ in range(cpy_bytes):
-            
-            if(dst_index >= cnt):
-                #idc.msg("[d] out of bound write to %x/%x\n" % (cnt, dst_index))
+
+            if (dst_index >= cnt):
+                #shannon_generic.DEBUG("[d] out of bound write to %x/%x\n" % (cnt, dst_index))
                 return bytes(list(output_buffer))
 
             if (dst_index >= len(output_buffer)):
@@ -474,22 +475,22 @@ def scatterload_decompress(src, cnt):
 
             # copy 'high_4_b + 1' bytes from the previously decompressed data
             for _ in range(high_4_b + 1):
-                
+
                 # buffer max bailout
-                if(dst_index >= cnt):
-                    #idc.msg("[d] out of bound write to %x/%x/%x\n" % (cnt, dst_index, src_index))
+                if (dst_index >= cnt):
+                    #shannon_generic.DEBUG("[d] out of bound write to %x/%x/%x\n" % (cnt, dst_index, src_index))
                     return bytes(list(output_buffer))
 
                 if (dst_index >= len(output_buffer)):
                     output_buffer = output_buffer.ljust(dst_index + 1, b"\x00")
 
                 # some possible error conditions
-                if(src_ptr > cnt):
-                    #idc.msg("[d] out of bound read to %x/%x/%x\n" % (cnt, src_ptr, src_index))
+                if (src_ptr > cnt):
+                    #shannon_generic.DEBUG("[d] out of bound read to %x/%x/%x\n" % (cnt, src_ptr, src_index))
                     return bytes(list(output_buffer))
-                
-                if(src_ptr < 0):
-                    #idc.msg("[d] negativ read %x/%x\n" % (src_ptr, src_index))
+
+                if (src_ptr < 0):
+                    #shannon_generic.DEBUG("[d] negativ read %x/%x\n" % (src_ptr, src_index))
                     return bytes(list(output_buffer))
 
                 # copy byte from previously decompressed data to the current destination

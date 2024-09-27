@@ -68,7 +68,7 @@ def restore_ss_names():
                 opcode = ida_ua.ua_mnem(xref_str_tmp)
                 
                 if (opcode == "BL"):
-                    # idc.msg("[d] found BL at %x\n" % xref_str_tmp)
+                    # shannon_generic.DEBUG("[d] found BL at %x\n" % xref_str_tmp)
                     # docs said this is a list, but seems to be a generator?
                     xref_str = next(
                         idautils.CodeRefsFrom(xref_str_tmp, 0))
@@ -94,7 +94,7 @@ def restore_ss_names():
                     opcode = ida_ua.ua_mnem(cur_offset)
                     
                     if (opcode == "LDR"):
-                        # idc.msg("[d] found LDR at %x\n" % cur_offset)
+                        # shannon_generic.DEBUG("[d] found LDR at %x\n" % cur_offset)
                         break
                     else:
                         prev_offset = cur_offset
@@ -108,12 +108,12 @@ def restore_ss_names():
 
                 # sanity checks
                 if (func_name == None):
-                    # idc.msg("[d] %x: failed sanity check (None)\n" % str_addr)
+                    # shannon_generic.DEBUG("[d] %x: failed sanity check (None)\n" % str_addr)
                     check_failed = 1
                     
                 # this in elif to avoid err with undefined bla
                 elif (len(func_name.decode()) < 8):
-                    # idc.msg("[d] %x: failed sanity check (length)\n" % str_addr)
+                    # shannon_generic.DEBUG("[d] %x: failed sanity check (length)\n" % str_addr)
                     check_failed = 1
 
                 if check_failed:
@@ -127,7 +127,7 @@ def restore_ss_names():
 
                 func_name_str = func_name.decode()
 
-                # idc.msg("[d] %x: found function name %s\n" % (str_addr, func_name_str))
+                # shannon_generic.DEBUG("[d] %x: found function name %s\n" % (str_addr, func_name_str))
 
                 if ("ss_" not in func_name_str):
                     idc.msg("[e] %x: failed to find function name for %x, found '%s' instead\n" % (
@@ -151,7 +151,7 @@ def restore_ss_names():
                         idc.msg("[e] %x: function name too short: %s" %
                                 (func_start, func_name_str))
                 else:
-                    # idc.msg("[d] not a function, searching for start\n")
+                    # shannon_generic.DEBUG("[d] not a function, searching for start\n")
                     cur_offset = xref_func.frm
                     prev_offset = 0
                     # find func boundaries
@@ -173,5 +173,4 @@ def restore_ss_names():
 #for debugging purpose export SHANNON_WORKFLOW="NO"
 if os.environ.get('SHANNON_WORKFLOW') == "NO":
     idc.msg("[i] running names in standalone mode")
-restore_ss_names()
-restore_cpp_names()
+

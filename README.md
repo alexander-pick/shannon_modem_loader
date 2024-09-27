@@ -8,9 +8,15 @@ The loader was tested with a larger set of images from ancient (e.g. G8700, S7) 
 
 # How To Use This Loader
 
-To use the loader just install `shannon_load.py` inside your [IDA Pro](https://hex-rays.com/ida-pro/) or [IDA Home ARM](https://hex-rays.com/ida-home/) loader folder and the other python files into the IDA python folder. `install.sh` will assist you with this task, if you want to do it manually please take a look inside. For [IDA Pro](https://hex-rays.com/ida-pro/) 8.3 and 8.4 and [IDA Home ARM](https://hex-rays.com/ida-home/) the default installation directory should be detected by default. Otherwise you can specify the installation directory as the first parameter to the script. 
+To use the loader just install `shannon_load.py` inside your [IDA Pro](https://hex-rays.com/ida-pro/) or [IDA Home ARM](https://hex-rays.com/ida-home/) loader folder and the other python files into the IDA python folder. `install.sh` will assist you with this task, if you want to do it manually please take a look inside. For [IDA Pro](https://hex-rays.com/ida-pro/) 9.0, 8.3 and 8.4 and [IDA Home ARM](https://hex-rays.com/ida-home/) run the installer with one of the following commandline options:
 
-`./install.sh ~/your-ida-installdir/`
+```
+-d <dir> specify IDA installation directory
+-r run IDA after installation
+-a auto mode, find IDA installation dir automatically
+-t test mode, combines -a -r and enabled logging in IDA
+-h print help
+```
 
 Once installed open a `modem.bin` file extracted from an OTA update in IDA. The loader should detect the TOC format and load the image accordingly. The postprocessor script will add additional segment information after the initial analysis has finished. Adding the segments right from the start will confuse and slow down the analysis process.
 
@@ -69,6 +75,8 @@ If you look at a crash dump or find the respective functionality inside `modem.b
 ===================================================
 ```
 
+The modem image is build with ARM RVCT as shown above. A mapping of the RVCT version to toolchain used [can be found here](https://developer.arm.com/documentation/ka005901/1-0?lang=en&rev=3). Build 422 as shown above maps to Keil MDK 5.22, RVCT/Arm Compiler version 5.06u4. This version of RCVT can be found on the [ARM website here](https://developer.arm.com/downloads/view/ACOMP5?entitled=true&term=rvct&revision=r5p6-04rel1). This loader will detect installed ARM legacy compilers on Linux and ask to set their includes as compiler options for further analysis.
+
 ## Cortex-R and Cortex-A
 
 Around the S20 release a few things changed, Shannon basebands were upgraded from Cortex-R to Cortex-A. During this time additional stack checks were introduced as well. But stack cookies seem to be static, given the random values used it's unclear if the developers really understood the reason for this mitigation. 
@@ -79,7 +87,7 @@ The loader will identify MRC/MCR instructions in the image and comment them for 
 
 ## IDA Compatibility And Installation
 
-Tested with [IDA Pro](https://hex-rays.com/ida-pro/) 8.x (8.3 to 8.4 SP2) as well as [IDA Home ARM](https://hex-rays.com/ida-home/). Might work on versions starting from 7.x using the revamped idapython API. 
+Tested with [IDA Pro](https://hex-rays.com/ida-pro/) 9.x (9.0), 8.x (8.3 to 8.4 SP2) as well as [IDA Home ARM](https://hex-rays.com/ida-home/). Might work on versions starting from 7.x using the revamped idapython API. 
 
 Since I work on Linux the `install.sh` is a bash script. If you are using OSX or Windows you can perform the installation manually by copying the files in their respective directories to install the loader manually:
 

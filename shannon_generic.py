@@ -16,6 +16,14 @@ import ida_nalt
 
 import shannon_funcs
 
+# uncomment for debug out
+is_debug = True
+
+def DEBUG(msg):
+    global is_debug
+    if(is_debug):
+        idc.msg(msg)
+
 # adds a memory segment to the database
 def add_memory_segment(seg_start, seg_size, seg_name, seg_type="DATA", sparse=True):
 
@@ -58,10 +66,10 @@ def create_name(ea, name):
 
         if (func_start != idaapi.BADADDR):
             if (len(name) > 8):
-                                               
-                if("::" in name):
+
+                if ("::" in name):
                     func_name = shannon_funcs.mangle_name(name)
-                else:   
+                else:
                     func_name = shannon_funcs.function_find_name(name)
 
                 ida_name.set_name(func_start, func_name, ida_name.SN_NOCHECK | ida_name.SN_FORCE)
@@ -74,7 +82,7 @@ def get_ref_set_name(cur_ea, name):
 
     opcode = ida_ua.ua_mnem(cur_ea)
 
-    # idc.msg("[d] %x: %s -> %s\n" % (cur_ea, opcode, name))
+    # shannon_generic.DEBUG("[d] %x: %s -> %s\n" % (cur_ea, opcode, name))
     if (opcode == "LDR"):
         target_ref = idc.get_operand_value(cur_ea, 1)
         target = int.from_bytes(
@@ -98,7 +106,7 @@ def resolve_ref(str_addr):
         return None
 
     str_offset = int.from_bytes(bytes, "little")
-    # idc.msg("[d] %x: fallback ref\n" % str_offset)
+    # shannon_generic.DEBUG("[d] %x: fallback ref\n" % str_offset)
 
     name = idc.get_strlit_contents(str_offset)
     # yes it's a ref to a string
@@ -164,7 +172,7 @@ def get_metric(bl_target):
     func_start = idc.get_func_attr(bl_target, idc.FUNCATTR_START)
     func_end = idc.get_func_attr(bl_target, idc.FUNCATTR_END)
 
-    #idc.msg("[d] get_metrics(%x) -> %x %x\n" % (bl_target, func_start, func_end))
+    #shannon_generic.DEBUG("[d] get_metrics(%x) -> %x %x\n" % (bl_target, func_start, func_end))
 
     func_cur = bl_target
 
@@ -175,13 +183,13 @@ def get_metric(bl_target):
 
             length += 1
             func_cur = idc.next_head(func_cur)
-            #idc.msg("[d] offset %x\n" % func_cur)
+            #shannon_generic.DEBUG("[d] offset %x\n" % func_cur)
 
             opcode = ida_ua.ua_mnem(func_cur)
 
             # bailout
             if (opcode == None):
-                #idc.msg("[d] no opcode at %x\n" % func_cur)
+                #shannon_generic.DEBUG("[d] no opcode at %x\n" % func_cur)
                 continue
 
             # we reached the end of the world
@@ -193,7 +201,7 @@ def get_metric(bl_target):
                 # func_o = ida_funcs.get_func(func_start)
 
                 # if func_o is not None:
-                #     idc.msg("[d] differing boundaries for function at %x -> end was %x should be %x\n" % (func_start, func_end, func_cur))
+                #     shannon_generic.DEBUG("[d] differing boundaries for function at %x -> end was %x should be %x\n" % (func_start, func_end, func_cur))
                 #     func_o.end_ea = func_cur
                 #     func_end = func_cur
                 #     ida_funcs.update_func(func_o)
@@ -212,14 +220,14 @@ def get_metric(bl_target):
                 if (first_operand != idaapi.BADADDR):
 
                     if (ida_idp.is_call_insn(func_cur)):
-                        #idc.msg("[d] %s call at %x -> %x\n" % (opcode, func_cur, first_operand))
+                        #shannon_generic.DEBUG("[d] %s call at %x -> %x\n" % (opcode, func_cur, first_operand))
                         calls.append(func_cur)
                     elif (first_operand >= func_start and func_cur > first_operand):
                         # jump backwards inside function, most likely a loop
-                        #idc.msg("[d] %s loop at %x -> %x\n" % (opcode, func_cur, first_operand))
+                        #shannon_generic.DEBUG("[d] %s loop at %x -> %x\n" % (opcode, func_cur, first_operand))
                         loops.append(func_cur)
                     else:
-                        #idc.msg("[d] %s branch at %x -> %x\n" % (opcode, func_cur, first_operand))
+                        #shannon_generic.DEBUG("[d] %s branch at %x -> %x\n" % (opcode, func_cur, first_operand))
                         branch.append(func_cur)
 
                 else:
@@ -232,7 +240,7 @@ def get_metric(bl_target):
         # get basic block count of function
         function = idaapi.get_func(func_start)
 
-        if (function != None):
+        if (function):
 
             flow_chart = idaapi.FlowChart(function)
             flow_size = flow_chart.size
@@ -255,21 +263,32 @@ def print_metrics(addr, metrics):
 # how ida_search.find_text() works for my usecase - moar performance
 def search_text(start_ea, end_ea, text):
 
-    patterns = ida_bytes.compiled_binpat_vec_t()
-    encoding = ida_nalt.get_default_encoding_idx(ida_nalt.BPU_1B)
+    if (idaapi.IDA_SDK_VERSION >= 900):
+        
+        #shannon_generic.DEBUG("[d] search version 900\n")
 
-    if text.find('"') < 0:
-        text = '"%s"' % text
-
-    err = ida_bytes.parse_binpat_str(patterns, start_ea, text, 10, encoding)
-
-    if (not err):
-
-        #idc.msg("[d] searching for %s from %x to %x\n" % (text, start_ea, end_ea))
-
-        ea = ida_bytes.bin_search(start_ea, end_ea, patterns, ida_bytes.BIN_SEARCH_FORWARD |
-                                  ida_bytes.BIN_SEARCH_NOBREAK | ida_bytes.BIN_SEARCH_NOSHOW)
-
+        ea = ida_bytes.find_string(text, start_ea, end_ea, None, ida_nalt.get_default_encoding_idx(ida_nalt.BPU_1B),
+                              ida_bytes.BIN_SEARCH_FORWARD | ida_bytes.BIN_SEARCH_NOBREAK | ida_bytes.BIN_SEARCH_NOSHOW)
+        
         return ea
+        
+    else:
 
-    return idaapi.BADADDR
+        patterns = ida_bytes.compiled_binpat_vec_t()
+        encoding = ida_nalt.get_default_encoding_idx(ida_nalt.BPU_1B)
+
+        if text.find('"') < 0:
+            text = '"%s"' % text
+
+        err = ida_bytes.parse_binpat_str(patterns, start_ea, text, 10, encoding)
+
+        if (not err):
+
+            #shannon_generic.DEBUG("[d] searching for %s from %x to %x\n" % (text, start_ea, end_ea))
+
+            ea = ida_bytes.bin_search(start_ea, end_ea, patterns, ida_bytes.BIN_SEARCH_FORWARD |
+                                      ida_bytes.BIN_SEARCH_NOBREAK | ida_bytes.BIN_SEARCH_NOSHOW)
+
+            return ea
+
+        return idaapi.BADADDR

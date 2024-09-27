@@ -30,22 +30,22 @@ import shannon_names
 # identify the non returning function which belongs to the stack protection, if it exists
 # we deal with a very new BB - like 5G new.
 def find_cookie_monster():
-    
+
     seg_t = ida_segment.get_segm_by_name("MAIN_file")
-    
+
     offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "Check a function")
     offset = shannon_generic.get_first_ref(offset)
-    
-    if(offset != None and offset != idaapi.BADADDR):
-        
+
+    if (offset != None and offset != idaapi.BADADDR):
+
         idc.msg("[i] found stack protection handler at %x\n" % offset)
-        
+
         cookie_func_start = idc.get_func_attr(offset, idc.FUNCATTR_START)
-        
+
         ida_name.set_name(cookie_func_start, "stack_err", ida_name.SN_NOCHECK | ida_name.SN_FORCE)
-        
+
         return True
-    
+
     return False
 
 class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
@@ -59,10 +59,6 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         # start calculating runtime
         start_time = time.process_time()
 
-        # show a "please wait .." box
-        idaapi.show_wait_box(
-            'HIDECANCEL\nPost-processing modem image, please wait...')
-
         # from here on do the fancy stuff
 
         shannon_debug_traces.make_dbt_refs()
@@ -70,7 +66,7 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         shannon_names.restore_ss_names()
         shannon_names.restore_cpp_names()
         shannon_generic.create_long_strings()
-        
+
         find_cookie_monster()
 
         for s in idautils.Segments():
@@ -94,24 +90,24 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
                 shannon_generic.get_ref_set_name(seg_start + 12, "prefetch_abort_v")
 
                 shannon_generic.get_ref_set_name(seg_start + 16, "data_abort_v")
-                
+
                 shannon_generic.get_ref_set_name(seg_start + 20, "reserved_v")
 
                 shannon_generic.get_ref_set_name(seg_start + 24, "irq_v")
-                
+
                 shannon_generic.get_ref_set_name(seg_start + 28, "fiq_v")
 
                 self.memory_ranges()
-                
+
                 # it is very important to do this in the correct order
-                # especially for new modems or the result will be left 
+                # especially for new modems or the result will be left
                 # in a weird state
 
                 shannon_mpu.find_hw_init()
                 shannon_mpu.scan_for_mrc()
 
                 shannon_scatterload.find_scatter()
-        
+
                 shannon_pal_reconstructor.find_pal_msg_funcs()
                 shannon_pal_reconstructor.find_pal_init()
 
@@ -124,9 +120,10 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
             idc.plan_and_wait(idc.get_segm_start(s), idc.get_segm_end(s))
 
         # fix strings a last time
-        idautils.Strings().setup(strtypes=[ida_nalt.STRTYPE_C], ignore_instructions=True, minlen=6)
+        idautils.Strings().setup(strtypes=[ida_nalt.STRTYPE_C],
+                                 ignore_instructions=True, minlen=6)
         ida_strlist.build_strlist()
-        
+
         timediff = time.process_time() - start_time
         idc.msg("[i] post-processing runtime %d minutes and %d seconds\n" %
                 ((timediff / 60), (timediff % 60)))
@@ -203,7 +200,10 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
         #shannon_generic.add_memory_segment(0xF0000000, 0x0FFFFFFF, "unknown_8")
 
-
 idb_hooks = idb_finalize_hooks_t()
 idb_hooks.hook()
 idc.msg("[i] Shannon postprocessor scheduled.\n")
+
+#show a "please wait .." box
+if (not shannon_generic.is_debug):
+    idaapi.show_wait_box('HIDECANCEL\nPost-processing modem image, please wait...')

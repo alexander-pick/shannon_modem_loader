@@ -10,24 +10,22 @@ import ida_name
 import ida_ua
 import ida_segment
 import ida_bytes
-import ida_struct
 import idautils
-
 import ida_idp
 
 import shannon_generic
 import shannon_funcs
+import shannon_structs
 
 import os
 
 def get_segment_boundaries(seg_name="MAIN_file"):
-        
+
     seg_t = ida_segment.get_segm_by_name(seg_name)
 
     if (seg_t.end_ea == idaapi.BADADDR):
-        idc.msg("[e] cannot find "+seg_name+" boundaries\n")
-        return None
-    
+        idc.msg("[e] cannot find " + seg_name + " boundaries\n")
+
     return seg_t
 
 # find the hardware init function
@@ -38,24 +36,24 @@ def find_hw_init():
     # search only in main to avoid unnecessary long runtimes
     seg_t = get_segment_boundaries()
 
-    if(seg_t == None):
+    if (seg_t.end_ea == idaapi.BADADDR):
         return
 
     offset = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "Invalid warm boot")
-    
+
     if (offset == idaapi.BADADDR):
         idc.msg("[e] hw_Init(): cannot find string\n")
         return
-    
+
     offset = shannon_generic.get_first_ref(offset)
 
-    # idc.msg("[d] find_hw_init() offset pre: %x\n" % offset)
+    # shannon_generic.DEBUG("[d] find_hw_init() offset pre: %x\n" % offset)
 
     if (offset != idaapi.BADADDR):
         if (shannon_funcs.function_find_boundaries(offset)):
             offset = idc.get_func_attr(offset, idc.FUNCATTR_START)
 
-    # idc.msg("[d] find_hw_init() offset: %x\n" % offset)
+    # shannon_generic.DEBUG("[d] find_hw_init() offset: %x\n" % offset)
 
     if (offset != idaapi.BADADDR):
 
@@ -93,155 +91,171 @@ def find_hw_init():
             candidates = list(set(candidates))
 
             for candidate in candidates:
-                #idc.msg("[d] possible mpu function: %x\n" % candidate)
+                #shannon_generic.DEBUG("[d] possible mpu function: %x\n" % candidate)
                 validate_mpu_candidate(candidate)
     else:
         idc.msg("[i] failed to identify hw_init()\n")
 
 # comment mrc and mrc operations
 def comment_mcr_mrc(read_write, operand, opcode, addr):
-    
+
     op = "read"
-    
-    if(read_write):
+
+    if (read_write):
         op = "write"
 
     # ID and System Configuration Registers
-    if("c0c" in operand):
-        idaapi.set_cmt(addr, "Information about the processor - "+op, 0)
+    if ("c0c" in operand):
+        idaapi.set_cmt(addr, "Information about the processor - " + op, 0)
 
-        if(opcode == 0):
-            idaapi.set_cmt(addr, "Main ID Register (MIDR) - processor identification information - "+op, 0)
+        if (opcode == 0):
+            idaapi.set_cmt(
+                addr, "Main ID Register (MIDR) - processor identification information - " + op, 0)
             return
 
-        if(opcode == 1):
-            idaapi.set_cmt(addr, "Cache Type Register (CTR) - level 1 data cache characteristics - "+op, 0)
+        if (opcode == 1):
+            idaapi.set_cmt(
+                addr, "Cache Type Register (CTR) - level 1 data cache characteristics - " + op, 0)
             return
-    
-        if(opcode == 2):
-            idaapi.set_cmt(addr, "Information about TCMs (Tightly Coupled Memories) - "+op, 0)
+
+        if (opcode == 2):
+            idaapi.set_cmt(addr, "Information about TCMs (Tightly Coupled Memories) - " + op, 0)
             return
-        
-        if(opcode == 3):
-            idaapi.set_cmt(addr, "Information about the TLB architecture - "+op, 0)
+
+        if (opcode == 3):
+            idaapi.set_cmt(addr, "Information about the TLB architecture - " + op, 0)
             idc.msg("[i] MMU - TLB info request at %x\n" % (addr))
             return
-    
-        if(opcode == 4):
-            idaapi.set_cmt(addr, "Information about the MPU (Memory Protection Unit) - "+op, 0)
+
+        if (opcode == 4):
+            idaapi.set_cmt(addr, "Information about the MPU (Memory Protection Unit) - " + op, 0)
             idc.msg("[i] MMU - MMU info request at %x\n" % (addr))
             return
-        
-        if(opcode == 5):
-            idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 0)
-            return
-        
-        if(opcode == 6):
-            idaapi.set_cmt(addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - "+op, 0)
-            return
-        
-        if(opcode == 7):
-            idaapi.set_cmt(addr, "Debug Feature Register (DFR) - information about debug features - "+op, 0)
-            return
-        
-        if(opcode == 8):
-            idaapi.set_cmt(addr, "Auxiliary Feature Register (AFR) - auxiliary features information - "+op, 0)
-            return
-        
-        if(opcode == 9):
-            idaapi.set_cmt(addr, "Memory Model Feature Register 0 (MMFR0) - additional memory model features. - "+op, 0)
-            return
-        
-        if(opcode == 10):
-            idaapi.set_cmt(addr, "Memory Model Feature Register 1 (MMFR1) - additional memory model features. - "+op, 0)
-            return
-        
-        if(opcode == 11):
-            idaapi.set_cmt(addr, "Memory Model Feature Register 2 (MMFR2) - additional memory model features. - "+op, 0)
-            return
-        
-        if(opcode == 12):
-            idaapi.set_cmt(addr, "Memory Model Feature Register 3 (MMFR3) - additional memory model features. - "+op, 0)
+
+        if (opcode == 5):
+            idaapi.set_cmt(
+                addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - " + op, 0)
             return
 
-        if(opcode == 13):
-            idaapi.set_cmt(addr, "ISA Feature Register 0 (ISAR1) - additional instruction set information - "+op, 0)
+        if (opcode == 6):
+            idaapi.set_cmt(
+                addr, "Processor Feature Register 1 (PFR1) - additional processor feature information - " + op, 0)
             return
-        
-        if(opcode == 14):
-            idaapi.set_cmt(addr, "ISA Feature Register 1 (ISAR1) - additional instruction set information - "+op, 0)
+
+        if (opcode == 7):
+            idaapi.set_cmt(
+                addr, "Debug Feature Register (DFR) - information about debug features - " + op, 0)
             return
-        
-        if(opcode == 15):
-            idaapi.set_cmt(addr, "ISA Feature Register 2 (ISAR2) - additional instruction set information - "+op, 0)
+
+        if (opcode == 8):
+            idaapi.set_cmt(
+                addr, "Auxiliary Feature Register (AFR) - auxiliary features information - " + op, 0)
             return
-            
+
+        if (opcode == 9):
+            idaapi.set_cmt(
+                addr, "Memory Model Feature Register 0 (MMFR0) - additional memory model features. - " + op, 0)
+            return
+
+        if (opcode == 10):
+            idaapi.set_cmt(
+                addr, "Memory Model Feature Register 1 (MMFR1) - additional memory model features. - " + op, 0)
+            return
+
+        if (opcode == 11):
+            idaapi.set_cmt(
+                addr, "Memory Model Feature Register 2 (MMFR2) - additional memory model features. - " + op, 0)
+            return
+
+        if (opcode == 12):
+            idaapi.set_cmt(
+                addr, "Memory Model Feature Register 3 (MMFR3) - additional memory model features. - " + op, 0)
+            return
+
+        if (opcode == 13):
+            idaapi.set_cmt(
+                addr, "ISA Feature Register 0 (ISAR1) - additional instruction set information - " + op, 0)
+            return
+
+        if (opcode == 14):
+            idaapi.set_cmt(
+                addr, "ISA Feature Register 1 (ISAR1) - additional instruction set information - " + op, 0)
+            return
+
+        if (opcode == 15):
+            idaapi.set_cmt(
+                addr, "ISA Feature Register 2 (ISAR2) - additional instruction set information - " + op, 0)
+            return
+
     # System Control Register (SCTLR)
-    if("c1c" in operand):
-        idaapi.set_cmt(addr, "System Control Register - "+op, 0)
+    if ("c1c" in operand):
+        idaapi.set_cmt(addr, "System Control Register - " + op, 0)
         return
 
     # Translation Table Base Register (TTBR)
-    if("c2c" in operand):
-        idaapi.set_cmt(addr, "Translation Table Base Register - "+op, 0)
-       
-        if(opcode == 0):
-            idaapi.set_cmt(addr, "Translation Table Base Register (TTBR0), base of the first-level translation table - "+op, 0)
-            if(read_write):
-                idc.msg("[i] MMU - TTBR0 write at %x\n" % (addr))            
-            return   
-    
-        if(opcode == 1):
-            idaapi.set_cmt(addr, "Translation Table Base Register (TTBR1), base of the second-level translation table - "+op, 0)
-            if(read_write):
+    if ("c2c" in operand):
+        idaapi.set_cmt(addr, "Translation Table Base Register - " + op, 0)
+
+        if (opcode == 0):
+            idaapi.set_cmt(
+                addr, "Translation Table Base Register (TTBR0), base of the first-level translation table - " + op, 0)
+            if (read_write):
+                idc.msg("[i] MMU - TTBR0 write at %x\n" % (addr))
+            return
+
+        if (opcode == 1):
+            idaapi.set_cmt(
+                addr, "Translation Table Base Register (TTBR1), base of the second-level translation table - " + op, 0)
+            if (read_write):
                 idc.msg("[i] MMU - TTBR1 write at %x\n" % (addr))
-            return   
-    
-        if(opcode == 2):
-            idaapi.set_cmt(addr, "Translation Table Base Control Register (TTBCR), controls the use of TTBR0 and TTBR1 - "+op, 0)
+            return
+
+        if (opcode == 2):
+            idaapi.set_cmt(
+                addr, "Translation Table Base Control Register (TTBCR), controls the use of TTBR0 and TTBR1 - " + op, 0)
             idc.msg("[i] MMU - TTBCR operation at %x\n" % (addr))
-            return                       
+            return
 
     # Domain Access Control Register
-    if("c3c" in operand):
-        idaapi.set_cmt(addr, "Domain Access Control Register - "+op, 0)
-        if(read_write):
-            idc.msg("[i] MMU - DACR write at %x\n" % (addr))      
-        return   
+    if ("c3c" in operand):
+        idaapi.set_cmt(addr, "Domain Access Control Register - " + op, 0)
+        if (read_write):
+            idc.msg("[i] MMU - DACR write at %x\n" % (addr))
+        return
 
     # Fault Status Registers
-    if("c5c" in operand):
-        idaapi.set_cmt(addr, "Fault Status Registers - "+op, 0)
-        return   
-        
+    if ("c5c" in operand):
+        idaapi.set_cmt(addr, "Fault Status Registers - " + op, 0)
+        return
+
     # Fault Address Registers
-    if("c6c" in operand):
-        idaapi.set_cmt(addr, "Fault Address Registers - "+op, 0)
-        return   
-        
+    if ("c6c" in operand):
+        idaapi.set_cmt(addr, "Fault Address Registers - " + op, 0)
+        return
+
     # Cache and Branch Predictor Maintenance
-    if("c7c" in operand):
-        idaapi.set_cmt(addr, "Cache and Branch Predictor Maintenance - "+op, 0)
-        return   
-        
+    if ("c7c" in operand):
+        idaapi.set_cmt(addr, "Cache and Branch Predictor Maintenance - " + op, 0)
+        return
+
     # Performance Monitors Registers
-    if("c9c" in operand):
-        idaapi.set_cmt(addr, "Performance Monitors Registers - "+op, 0)
-        return   
+    if ("c9c" in operand):
+        idaapi.set_cmt(addr, "Performance Monitors Registers - " + op, 0)
+        return
 
     # Memory Management Fault Address Registers
-    if("c10c" in operand):
-        idaapi.set_cmt(addr, "Memory Management Fault Address Registers - "+op, 0)
-        return   
-        
-    # Vector Base Address Register (VBAR):
-    if("c12c" in operand):
-        idaapi.set_cmt(addr, "Vector Base Address Register (VBAR) - "+op, 0)
+    if ("c10c" in operand):
+        idaapi.set_cmt(addr, "Memory Management Fault Address Registers - " + op, 0)
         return
-    
+
+    # Vector Base Address Register (VBAR):
+    if ("c12c" in operand):
+        idaapi.set_cmt(addr, "Vector Base Address Register (VBAR) - " + op, 0)
+        return
+
     # Process, Context, and Thread ID Registers
-    if("c13c" in operand):
-        idaapi.set_cmt(addr, "Process, Context, and Thread ID Registers - "+op, 0)
+    if ("c13c" in operand):
+        idaapi.set_cmt(addr, "Process, Context, and Thread ID Registers - " + op, 0)
         return
 
 # comment MSR ops on CPSR
@@ -262,7 +276,7 @@ def comment_cpsr(value, addr):
     i_flag = int(binary_value[7], 2)
     f_flag = int(binary_value[6], 2)
     t_flag = int(binary_value[5], 2)
-    
+
     mode_bits = binary_value[27:32]
 
     # map mode bits to mode names
@@ -292,49 +306,49 @@ def comment_cpsr(value, addr):
         'T': 'thumb',
     }
 
-    comment = "mode: "+mode+"\n\n"
+    comment = "mode: " + mode + "\n\n"
     comment += "flags\n"
-    
+
     for bit, (name, description) in enumerate(flags.items(), start=31):
-        
-        comment += str(bit)+": " 
-             
-        if(eval(name.lower() + "_flag")):
-            comment += "1 "+description+"\n"
+
+        comment += str(bit) + ": "
+
+        if (eval(name.lower() + "_flag")):
+            comment += "1 " + description + "\n"
         else:
-            comment += "0 "+description+"\n"
+            comment += "0 " + description + "\n"
 
     idaapi.set_cmt(addr, comment, 0)
 
 # this tries to find the MRC opcodes required for setting up the MMU
 # we are looking for a write to SCTLR
 def validate_mmu_candidate(bl_target):
-    
+
     func_start = idc.get_func_attr(bl_target, idc.FUNCATTR_START)
     func_end = idc.get_func_attr(bl_target, idc.FUNCATTR_END)
-    
+
     addr = func_start
-    
-    if(func_start != idaapi.BADADDR):
-        
-        while(addr <= func_end):
-                        
-            # First opcode is an MRC 
+
+    if (func_start != idaapi.BADADDR):
+
+        while (addr <= func_end):
+
+            # First opcode is an MRC
             opcode = ida_ua.ua_mnem(addr)
-            
-            if(opcode == None):
+
+            if (opcode == None):
                 addr = idc.next_head(addr)
                 continue
 
-            # MCR p15, 0, R0, c2, c0, 2 
+            # MCR p15, 0, R0, c2, c0, 2
             # -> Write to CP15 - Operand Num (normally 0), Source Reg CPU, Coproc Num, Coproc Reg, Reg Offset
             # c2 is translation table
-            
+
             # MCR - write
             # MRC - read
-            
-            if("MSR" in opcode):
-                
+
+            if ("MSR" in opcode):
+
                 cpsr = idc.get_operand_value(addr, 0)
                 cpsr_value = idc.get_operand_value(addr, 1)
 
@@ -347,53 +361,53 @@ def validate_mmu_candidate(bl_target):
                 # this is normally a bit field, we just analyse some very common values here
                 if ("CPSR" in cpsr_str):
                     comment_cpsr(cpsr_value, addr)
-                                    
-            if("MCR" == opcode or "MRC" == opcode):
-                
-                #idc.msg("[d] MCR/MRC: %x\n" % addr) 
-            
-                # workaround since get_oeprand_value does not work    
+
+            if ("MCR" == opcode or "MRC" == opcode):
+
+                #shannon_generic.DEBUG("[d] MCR/MRC: %x\n" % addr)
+
+                # workaround since get_oeprand_value does not work
                 t = idaapi.generate_disasm_line(addr)
-                if(t):
-                                        
+                if (t):
+
                     operands_str = idaapi.tag_remove(t)
-                    operands = operands_str.replace(",", "").replace(";","").split()
-                    
-                    #idc.msg("[d] %s\n" % operands_str) 
+                    operands = operands_str.replace(",", "").replace(";", "").split()
+
+                    #shannon_generic.DEBUG("[d] %s\n" % operands_str)
 
                     # CP15, the system control coprocessor is adressed
-                    if("p15" in operands[1]):
-                        
-                        if(len(operands) < 5):
+                    if ("p15" in operands[1]):
+
+                        if (len(operands) < 5):
                             idc.msg("[i] MCR/MRC operands error at %x\n" % addr)
                             addr = idc.next_head(addr)
                             continue
-            
+
                         if ("MCR" in opcode):
-                            comment_mcr_mrc(True, operands[3], int(operands[4]), addr)  
-                        
+                            comment_mcr_mrc(True, operands[3], int(operands[4]), addr)
+
                         else:
-                            
-                            comment_mcr_mrc(False, operands[3], int(operands[4]), addr)            
-   
+
+                            comment_mcr_mrc(False, operands[3], int(operands[4]), addr)
+
             addr = idc.next_head(addr)
 
     return
 
 # find all MRC with write to CP15 etc. - looking for MMU setup
 def scan_for_mrc(target_seg="MAIN_file"):
-    
-    idc.msg("[i] trying to identify MMU related opcodes in %s\n" % target_seg) 
-        
+
+    idc.msg("[i] trying to identify MMU related opcodes in %s\n" % target_seg)
+
     seg_t = get_segment_boundaries(target_seg)
-    
-    if(seg_t == None):
+
+    if (seg_t.end_ea == idaapi.BADADDR):
         return
-        
+
     for ea in idautils.Functions(seg_t.start_ea, seg_t.end_ea):
         validate_mmu_candidate(ea)
 
-    # idc.msg("[d] scan done\n")
+    # shannon_generic.DEBUG("[d] scan done\n")
 
 # check if we found the mpu table
 def validate_mpu_candidate(bl_target):
@@ -460,29 +474,31 @@ def process_mpu_table(tbl_candidates):
                 idc.msg("[e] candidate outside boundaries\n")
                 return False
 
-            struct_id = ida_struct.get_struc_id("mpu_region")
-            struct_size = ida_struct.get_struc_size(struct_id)
-            sptr = ida_struct.get_struc(struct_id)
+            struct_id = idc.get_struc_id("mpu_region")
+            struct_size = idc.get_struc_size(struct_id)
+            tif = shannon_structs.get_struct(struct_id)
 
             # just a sanity check in case we hit the wrong place
             # Shannon mpu table is never amazingly big
             max_entries = 0x20
             entries = 0
+            
+            num_ptr = shannon_structs.get_offset_by_name(tif, "num")
+            addr_ptr = shannon_structs.get_offset_by_name(tif, "addr")
+            size_ptr = shannon_structs.get_offset_by_name(tif, "size")
+            xn_ptr = shannon_structs.get_offset_by_name(tif, "size")
 
             while (1):
 
                 ida_bytes.del_items(mpu_tbl, 0, struct_size)
                 ida_bytes.create_struct(mpu_tbl, struct_size, struct_id)
 
-                num_ptr = ida_struct.get_member_by_name(sptr, "num")
-                addr_ptr = ida_struct.get_member_by_name(sptr, "addr")
-                size_ptr = ida_struct.get_member_by_name(sptr, "size")
+                # shannon_generic.DEBUG("[d] s:%x  o:%x, %x, %x, %x\n" %
+                #         (mpu_tbl, num_ptr, addr_ptr, size_ptr, xn_ptr))
 
-                xn_ptr = ida_struct.get_member_by_name(sptr, "size")
-
-                num = int.from_bytes(ida_bytes.get_bytes(mpu_tbl + num_ptr.soff, 4), "little")
-                addr = int.from_bytes(ida_bytes.get_bytes(mpu_tbl + addr_ptr.soff, 4), "little")
-                size = int.from_bytes(ida_bytes.get_bytes(mpu_tbl + size_ptr.soff, 4), "little")
+                num = int.from_bytes(ida_bytes.get_bytes((mpu_tbl + num_ptr), 4), "little")
+                addr = int.from_bytes(ida_bytes.get_bytes((mpu_tbl + addr_ptr), 4), "little")
+                size = int.from_bytes(ida_bytes.get_bytes((mpu_tbl + size_ptr), 4), "little")
 
                 if (num == 0xff):
                     idc.msg("[i] reached end of mpu tbl at %x\n" % mpu_tbl)
@@ -492,8 +508,7 @@ def process_mpu_table(tbl_candidates):
                     idc.msg("[e] too many entries in table at %x\n" % mpu_tbl)
                     return False
 
-                xn = int.from_bytes(ida_bytes.get_bytes(
-                    mpu_tbl + xn_ptr.soff, 4), "little")
+                xn = int.from_bytes(ida_bytes.get_bytes((mpu_tbl + xn_ptr), 4), "little")
 
                 seg_type = "CODE"
 
