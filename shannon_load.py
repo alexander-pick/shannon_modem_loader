@@ -98,7 +98,7 @@ def load_file(fd, neflags, format):
     
     # call convention
     # https://hex-rays.com/products/ida/support/idadoc/285.shtml
-    idc.set_inf_attr(idc.INF_MODEL, idaapi.CM_N16_F32 | idaapi.CM_M_FF | idaapi.CM_CC_FASTCALL) 
+    idc.set_inf_attr(idc.INF_MODEL, idaapi.CM_N32_F48 | idaapi.CM_M_NN | idaapi.CM_CC_FASTCALL) 
 
     # datatype sizes
     # https://developer.arm.com/documentation/dui0282/b/arm-compiler-reference/c-and-c---implementation-details/basic-data-types?lang=en
@@ -139,9 +139,10 @@ def load_file(fd, neflags, format):
             ARM_inc_dir = True
         
         if(ARM_inc_dir):
-            if os.path.isdir(header_path):
+            if(os.path.isdir(header_path)):
                 ida_typeinf.set_c_header_path(header_path)
                 idc.msg("[i] set c_header_path to %s\n" % header_path)
+                                
                 break
     
     # demangle names
