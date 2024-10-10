@@ -67,7 +67,7 @@ def restore_ss_names():
                 xref_str_tmp = idc.next_head(prev_offset)
                 opcode = ida_ua.ua_mnem(xref_str_tmp)
                 
-                if (opcode == "BL"):
+                if ("BL" in opcode):
                     # shannon_generic.DEBUG("[d] found BL at %x\n" % xref_str_tmp)
                     # docs said this is a list, but seems to be a generator?
                     xref_str = next(
@@ -81,6 +81,8 @@ def restore_ss_names():
                 continue  # abort if not foudn or emptyt list
 
             idc.msg("[i] found verbose ss_ name function: %x\n" % xref_str)
+            
+            check_failed = 0
 
             # step 4 - iterate over the all calls to this function
             for xref_func in idautils.XrefsTo(xref_str, 0):
@@ -93,7 +95,8 @@ def restore_ss_names():
                     cur_offset = idc.prev_head(prev_offset)
                     opcode = ida_ua.ua_mnem(cur_offset)
                     
-                    if (opcode == "LDR"):
+                    # Thanks John Doe
+                    if ("DR" in opcode and idc.get_operand_value(cur_offset, 0) == 0x0):
                         # shannon_generic.DEBUG("[d] found LDR at %x\n" % cur_offset)
                         break
                     else:
