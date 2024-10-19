@@ -35,6 +35,8 @@ function install() {
     cp -v shannon_names.py ${IDADIR}/python/
     cp -v shannon_debug_traces.py ${IDADIR}/python/
     cp -v shannon_funcs.py ${IDADIR}/python/
+
+    cp -v sig/*.sig ${IDADIR}/sig/arm/
 }
 
 function findIDA() {

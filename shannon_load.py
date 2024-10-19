@@ -19,9 +19,6 @@ import ida_ida
 import ida_typeinf
 
 import struct
-import os
-import pwd
-import glob
 
 import shannon_structs
 import shannon_generic
@@ -121,30 +118,7 @@ def load_file(fd, neflags, format):
     ida_typeinf.set_c_header_path(ida_idp.cfg_get_cc_header_path(idc.COMP_GNU))
     
     ida_typeinf.set_c_header_path(ida_idp.cfg_get_cc_header_path(idc.COMP_GNU))
-    
-    home_dir = os.path.expanduser(f"~{pwd.getpwuid(os.geteuid())[0]}/")
-    
-    # find RVCT directories and set them as include path, if multiple are found -> ask
-    ARM_reference_compiler = "ARM_Compiler_5*"
-
-    rvct_paths = glob.glob(home_dir+"/"+ARM_reference_compiler+"*")
-        
-    for rvct in rvct_paths:
-        
-        header_path = rvct+"/include/"
-        
-        if(len(rvct_paths) > 1):
-            ARM_inc_dir = ida_kernwin.ask_yn(1, "HIDECANCEL\nUse " + header_path + " as include path?")
-        else:
-            ARM_inc_dir = True
-        
-        if(ARM_inc_dir):
-            if(os.path.isdir(header_path)):
-                ida_typeinf.set_c_header_path(header_path)
-                idc.msg("[i] set c_header_path to %s\n" % header_path)
-                                
-                break
-    
+      
     # demangle names
     idc.process_config_line("DemangleNames = 1")
     # check the gcc 3.x name box if not set

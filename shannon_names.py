@@ -67,6 +67,10 @@ def restore_ss_names():
                 xref_str_tmp = idc.next_head(prev_offset)
                 opcode = ida_ua.ua_mnem(xref_str_tmp)
                 
+                if (opcode == None):
+                    tries += 1
+                    continue
+                
                 if ("BL" in opcode):
                     # shannon_generic.DEBUG("[d] found BL at %x\n" % xref_str_tmp)
                     # docs said this is a list, but seems to be a generator?

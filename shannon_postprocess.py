@@ -13,12 +13,16 @@ import ida_idp
 import ida_segment
 import ida_name
 import ida_strlist
+import ida_nalt
+import ida_kernwin
+import ida_typeinf
 import ida_ua
 import ida_funcs
-import ida_nalt
-import ida_auto
 
 import time
+import os
+import pwd
+import glob
 
 import shannon_pal_reconstructor
 import shannon_generic
@@ -47,6 +51,104 @@ def find_cookie_monster():
         return True
 
     return False
+
+def find_rvct():
+
+    ARM_reference_compiler = "ARM_Compiler_"
+
+    seg_t = ida_segment.get_segm_by_name("MAIN_file")
+
+    rvct_addr_str = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "ARM RVCT")
+
+    if (rvct_addr_str != None):
+
+        #find start of the string for xref
+        rvct_addr_str = idc.get_item_head(rvct_addr_str)
+
+        rvct_major_ver = ""
+        rvct_minor_ver = ""
+        rvct_build = ""
+
+        for rvct_xref in idautils.XrefsTo(rvct_addr_str, 0):
+            # ARM RVCT %d.%d [Build %d]
+            prev_head = idc.prev_head(rvct_xref.frm)
+
+            opcode = ida_ua.ua_mnem(prev_head)
+
+            if (opcode == None):
+                continue
+
+            # in case there is a split string ref etc.
+            if (not "MOV" in opcode):
+                continue
+
+            rvct_major_ver = idc.get_operand_value(prev_head, 1)
+
+            prev_head = idc.prev_head(prev_head)
+            rvct_minor_ver = idc.get_operand_value(prev_head, 1)
+
+            prev_head = idc.prev_head(prev_head)
+            rvct_build = idc.get_operand_value(prev_head, 1)
+
+            idc.msg("[i] build using ARM RVCT %d.%02d [Build %d]\n" %
+                    (rvct_major_ver, rvct_minor_ver, rvct_build))
+
+            # there is commonly just one ref
+            break
+
+        if (rvct_major_ver):
+            home_dir = os.path.expanduser(f"~{pwd.getpwuid(os.geteuid())[0]}/")
+
+            # find matching RVCT installs and set them as include path, if multiple are found -> ask
+
+            rvct_paths = glob.glob(
+                home_dir + "/" + ARM_reference_compiler + "*" + str(rvct_build))
+
+            for rvct in rvct_paths:
+
+                header_path = rvct + "/include/"
+
+                if (len(rvct_paths) > 1):
+                    ARM_inc_dir = ida_kernwin.ask_yn(
+                        1, "HIDECANCEL\nUse " + header_path + " as include path?")
+                else:
+                    ARM_inc_dir = True
+
+                if (ARM_inc_dir):
+                    if (os.path.isdir(header_path)):
+                        ida_typeinf.set_c_header_path(header_path)
+                        idc.msg("[i] set c_header_path to %s\n" % header_path)
+
+                    break
+
+            # apply signatures if present
+            for sigdir in idaapi.get_ida_subdirs("sig"):
+
+                rvct_sig_file = ARM_reference_compiler + "*" + str(rvct_build) + ".sig"
+                sig_glob = sigdir + "/arm/" + rvct_sig_file
+                sig_files = glob.glob(sig_glob)
+
+                for sig_file in sig_files:
+
+                    if (os.path.exists(sig_file)):
+                        
+                        idc.msg("[i] applying signature file %s to all functions in database\n" % sig_file)
+
+                        func_cnt = 0
+                        
+                        for function_ea in idautils.Functions():
+                            #check that the function has no name yet
+                            if("sub_" in ida_funcs.get_func_name(function_ea)):
+                                #idc.msg("[d] %x\n" % function_ea)
+                                func_cnt += 1
+                                idaapi.apply_idasgn_to(sig_file, function_ea, 0)
+                        
+                        idc.msg("[i] checked %d functions for signature matches\n" % func_cnt)
+                        
+                    else:
+
+                        idc.msg("[i] cannot find signature file %s, please create one\n" %
+                                sig_file)
 
 class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
@@ -110,6 +212,8 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
                 shannon_pal_reconstructor.find_pal_msg_funcs()
                 shannon_pal_reconstructor.find_pal_init()
+
+        find_rvct()
 
         # remove "please wait ..." box and display runtime in log
         idaapi.hide_wait_box()
@@ -199,6 +303,7 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         shannon_generic.add_memory_segment(0xEC000000, 0x0000FFFF, "GLINK")
 
         #shannon_generic.add_memory_segment(0xF0000000, 0x0FFFFFFF, "unknown_8")
+
 
 idb_hooks = idb_finalize_hooks_t()
 idb_hooks.hook()

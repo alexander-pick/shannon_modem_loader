@@ -20,7 +20,7 @@ To use the loader just install `shannon_load.py` inside your [IDA Pro](https://h
 
 Once installed open a `modem.bin` file extracted from an OTA update in IDA. The loader should detect the TOC format and load the image accordingly. The postprocessor script will add additional segment information after the initial analysis has finished. Adding the segments right from the start will confuse and slow down the analysis process.
 
-The postprocessing module does most of the magic and it will take a bit to run, please be patient. All steps the post processor performs are in the individual files copied to `<IDAHOME>/python/`. You can use them as individual python modules if needed. See the post processor for details. A complete analysis of a modem image takes about 30 minutes to complete on average hardware.
+The postprocessing module does most of the magic and it will take a bit to run, please be patient. All steps the post processor performs are in the individual files copied to `<IDAHOME>/python/`. You can use them as individual python modules if needed. See the post processor for details. A complete analysis of a modem image takes about 10 minutes to complete on average hardware.
 
 ## How The Loader Works
 
@@ -75,7 +75,7 @@ If you look at a crash dump or find the respective functionality inside `modem.b
 ===================================================
 ```
 
-The modem image is build with ARM RVCT as shown above. A mapping of the RVCT version to toolchain used [can be found here](https://developer.arm.com/documentation/ka005901/1-0?lang=en&rev=3). Build 422 as shown above maps to Keil MDK 5.22, RVCT/Arm Compiler version 5.06u4. This version of RCVT can be found on the [ARM website here](https://developer.arm.com/downloads/view/ACOMP5?entitled=true&term=rvct&revision=r5p6-04rel1). This loader will detect installed ARM legacy compilers on Linux and ask to set their includes as compiler options for further analysis.
+The modem image is build with ARM RVCT as shown above. A mapping of the RVCT version to toolchain used [can be found here](https://developer.arm.com/documentation/ka005901/1-0?lang=en&rev=3). Build 422 as shown above maps to Keil MDK 5.22, RVCT/Arm Compiler version 5.06u4. This version of RCVT can be found on the [ARM website here](https://developer.arm.com/downloads/view/ACOMP5?entitled=true&term=rvct&revision=r5p6-04rel1). This loader will detect installed ARM legacy compilers on Linux and ask to set their includes as compiler options for further analysis. Furthermore, multiple premade FLIRT signatures to identify RVCT functions inside the binary are included.
 
 ## Cortex-R and Cortex-A
 
