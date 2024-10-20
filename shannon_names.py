@@ -99,6 +99,10 @@ def restore_ss_names():
                     cur_offset = idc.prev_head(prev_offset)
                     opcode = ida_ua.ua_mnem(cur_offset)
                     
+                    if (opcode == None):
+                        tries += 1
+                        continue
+                    
                     # Thanks John Doe
                     if ("DR" in opcode and idc.get_operand_value(cur_offset, 0) == 0x0):
                         # shannon_generic.DEBUG("[d] found LDR at %x\n" % cur_offset)
