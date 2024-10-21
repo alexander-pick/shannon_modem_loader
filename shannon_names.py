@@ -166,13 +166,22 @@ def restore_ss_names():
                     cur_offset = xref_func.frm
                     prev_offset = 0
                     # find func boundaries
-                    while 1:
+                    
+                    tries = 150
+                    
+                    while tries:
+                        
+                        # possible bailout
+                        tries -= 1
+                        
                         flags = idc.get_func_flags(cur_offset)
                         opcode = ida_ua.ua_mnem(cur_offset)
 
-                        if (flags == -1 and opcode != None):
+                        if ((flags == -1) and (opcode != None)):
+                            
                             prev_offset = cur_offset
                             cur_offset = idc.prev_head(cur_offset)
+                            
                         else:
 
                             ida_funcs.add_func(
