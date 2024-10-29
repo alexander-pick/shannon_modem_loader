@@ -89,6 +89,12 @@ def find_rvct():
 
             prev_head = idc.prev_head(prev_head)
             rvct_build = idc.get_operand_value(prev_head, 1)
+            
+            # old images have switched build and subversion
+            if(rvct_minor_ver > rvct_build):
+                tmp = rvct_minor_ver
+                rvct_minor_ver = rvct_build
+                rvct_build = tmp
 
             idc.msg("[i] build using ARM RVCT %d.%02d [Build %d]\n" %
                     (rvct_major_ver, rvct_minor_ver, rvct_build))
