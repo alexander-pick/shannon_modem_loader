@@ -89,36 +89,36 @@ def load_file(fd, neflags, format):
 
     # disable Coagulate and colapse
     idc.process_config_line("ANALYSIS = 0x9bff9ff7ULL")
-    
+
     # set compiler defaults
     idc.set_inf_attr(idc.INF_COMPILER, idc.COMP_GNU)
-    
+
     # call convention
     # https://hex-rays.com/products/ida/support/idadoc/285.shtml
-    idc.set_inf_attr(idc.INF_MODEL, idaapi.CM_N32_F48 | idaapi.CM_M_NN | idaapi.CM_CC_FASTCALL) 
+    idc.set_inf_attr(idc.INF_MODEL, idaapi.CM_N32_F48 | idaapi.CM_M_NN | idaapi.CM_CC_FASTCALL)
 
     # datatype sizes
     # https://developer.arm.com/documentation/dui0282/b/arm-compiler-reference/c-and-c---implementation-details/basic-data-types?lang=en
-          
+
     idc.set_inf_attr(idc.INF_SIZEOF_BOOL, 1)
-    idc.set_inf_attr(idc.INF_SIZEOF_SHORT, 2) 
-    idc.set_inf_attr(idc.INF_SIZEOF_INT, 4) 
-    idc.set_inf_attr(idc.INF_SIZEOF_ENUM, 4) 
-    idc.set_inf_attr(idc.INF_SIZEOF_LONG, 4) 
-    idc.set_inf_attr(idc.INF_SIZEOF_LLONG, 8) 
-    idc.set_inf_attr(idc.INF_SIZEOF_LDBL, 8) 
-     
+    idc.set_inf_attr(idc.INF_SIZEOF_SHORT, 2)
+    idc.set_inf_attr(idc.INF_SIZEOF_INT, 4)
+    idc.set_inf_attr(idc.INF_SIZEOF_ENUM, 4)
+    idc.set_inf_attr(idc.INF_SIZEOF_LONG, 4)
+    idc.set_inf_attr(idc.INF_SIZEOF_LLONG, 8)
+    idc.set_inf_attr(idc.INF_SIZEOF_LDBL, 8)
+
     # set type library ARM C v1.2
-    idc.add_default_til("armv12") 
-         
+    idc.add_default_til("armv12")
+
     # Set predefined macros for the target compiler
     ida_typeinf.set_c_macros(ida_idp.cfg_get_cc_predefined_macros(idc.COMP_GNU))
-    
+
     # Get the include directory path of the target compiler
     ida_typeinf.set_c_header_path(ida_idp.cfg_get_cc_header_path(idc.COMP_GNU))
-    
+
     ida_typeinf.set_c_header_path(ida_idp.cfg_get_cc_header_path(idc.COMP_GNU))
-      
+
     # demangle names
     idc.process_config_line("DemangleNames = 1")
     # check the gcc 3.x name box if not set
@@ -175,6 +175,9 @@ def load_file(fd, neflags, format):
 
             idaapi.set_processor_type("arm:ARMv8", ida_idp.SETPROC_LOADER_NON_FATAL)
             idc.process_config_line("ARM_DEFAULT_ARCHITECTURE = ARMv8")
+            
+            # limit for performance reasons
+            idc.process_config_line("ARM_REGTRACK_MAX_XREFS = 512")
 
             tensor = True
 

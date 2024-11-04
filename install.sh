@@ -78,6 +78,21 @@ function findIDA() {
     fi
 }
 
+function run_IDA() {
+
+    IDADEBUGLOG="/tmp/ida_shannon.log"
+
+    rm -f ${IDADEBUGLOG}
+    touch ${IDADEBUGLOG}
+
+    # -z3003 - for performance issues
+
+    eval "${IDADIR}/${IDABIN}  -L${IDADEBUGLOG} &"
+    tail -f ${IDADEBUGLOG}
+    
+    exit 0
+}
+
 while getopts d:b:rath FLAG
 do
     case "${FLAG}" in
@@ -92,19 +107,12 @@ done
 
 if [ -n "${IDATEST_OPT}" ]; then
 
-    IDADEBUGLOG="/tmp/ida_shannon.log"
-
     echo -e "[i] running in auto test mode"
     findIDA
     install
     echo -e "[i] starting IDA with logging"
 
-    rm -f ${IDADEBUGLOG}
-    touch ${IDADEBUGLOG}
-    eval "${IDADIR}/${IDABIN} -L${IDADEBUGLOG} &"
-    tail -f ${IDADEBUGLOG}
-
-    exit 0
+    run_IDA
 fi
 
 if [ -z "${IDAAUTO_OPT}" ]; then
@@ -121,5 +129,6 @@ echo -e "[i] installation done"
 
 if [ -n "${IDARUN_OPT}" ]; then
     echo -e "[i] starting IDA"
-    eval "${IDADIR}/${IDABIN}"
+
+    run_IDA
 fi

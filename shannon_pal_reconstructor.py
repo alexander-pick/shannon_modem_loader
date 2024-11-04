@@ -19,6 +19,15 @@ import shannon_structs
 
 import os
 
+# find ref to PALTskTm
+def get_PALTskTm_ref():
+    
+    seg_t = ida_segment.get_segm_by_name("MAIN_file")
+    pal_task_man = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "PALTskTm")
+    pal_task_man = shannon_generic.get_first_ref(pal_task_man)
+    
+    return pal_task_man
+
 # This code identifies a couple of functions of the platform abstraction layer and uses
 # these to find the task table. This could be done in a much simpler fashion by searching
 # for PALTskTm and work from there, but using the heuristic below a couple of func refs
@@ -141,9 +150,7 @@ def find_pal_init():
 
     idc.msg("[i] trying to identify PAL init and tasks\n")
 
-    seg_t = ida_segment.get_segm_by_name("MAIN_file")
-    pal_task_man = shannon_generic.search_text(seg_t.start_ea, seg_t.end_ea, "PALTskTm")
-    pal_task_man = shannon_generic.get_first_ref(pal_task_man)
+    pal_task_man = get_PALTskTm_ref()
 
     if (pal_task_man != idaapi.BADADDR):
 
@@ -155,7 +162,12 @@ def find_pal_init():
             idc.msg("[i] pal_TaskMngrInit(): %x\n" % func_start)
             ida_name.set_name(func_start, "pal_TaskMngrInit", ida_name.SN_NOCHECK)
 
-            find_task_desc_tbl(func_start, func_end)
+            tasks = find_task_desc_tbl(func_start, func_end)
+            
+            if(tasks > 0):
+                idc.msg("[i] identifiod %d tasks\n" % tasks)
+            else:
+                idc.msg("[e] failed to identify tasks\n")
 
             for xref in idautils.XrefsTo(func_start, 0):
 
@@ -184,7 +196,8 @@ def validate_if_dm_trace_log(bl_target):
         idc.msg("[i] dm_TraceMsg(): %x\n" % bl_target)
         ida_name.set_name(bl_target, "dm_TraceMsg", ida_name.SN_NOCHECK)
 
-def find_task_desc_tbl_new(task_func_start, task_func_end):
+# find task descriptor table for newer devices, 5G and up
+def find_task_desc_tbl_5g(task_func_start, task_func_end):
 
     idc.msg("[i] table discovery failed, attemping discovery for 5G modems\n")
 
@@ -194,6 +207,11 @@ def find_task_desc_tbl_new(task_func_start, task_func_end):
 
         task_func_cur = idc.next_head(task_func_cur)
         task_opcode = ida_ua.ua_mnem(task_func_cur)
+
+        # bailout
+        if (task_func_cur >= task_func_end):
+            idc.msg("[e] find_task_desc_tbl_5g: end reached %x\n" % (task_func_cur))
+            return -1
 
         if (task_opcode == None):
             continue
@@ -218,17 +236,18 @@ def find_task_desc_tbl_new(task_func_start, task_func_end):
                 ida_name.set_name(target_ref, "pal_TaskDescTbl", ida_name.SN_NOCHECK)
 
                 if (target_ref != idaapi.BADADDR and target_ref != 0x0):
+                    
+                    target_ref = target_ref + 0X28
 
                     idc.msg("[i] pal_TaskDescTbl(): %x\n" % target_ref)
 
                     struct_id = idc.get_struc_id("task_struct")
 
-                    mt = -1
                     # 0x1f8 - 0x118 = 0xE0 // new - old
                     shannon_structs.add_struc_member(
-                        struct_id, "padding_2", -1, idaapi.FF_BYTE, mt, 0xE0)
+                        struct_id, "padding_2", -1, idaapi.FF_BYTE, -1, 0xE0)
 
-                    tasks = identify_task_init(target_ref + 0X28)  # 40d
+                    tasks = identify_task_init(target_ref)
 
                     return tasks
 
@@ -236,10 +255,57 @@ def find_task_desc_tbl_new(task_func_start, task_func_end):
 
                     return -1
 
+
+# we look for the first function call after the Task string and check for the first MOVW which
+# loads the task table mostly hidden in a scatter part
+# TODO: cehck if I can merge this with the above somehow
+
+def find_task_desc_tbl_pixel(task_func_start, task_func_end):
+
+    idc.msg("[i] table discovery failed, attemping discovery for pixel like modems\n")
+
+    task_func_cur = get_PALTskTm_ref()
+    
+    while (1):
+
+        task_func_cur = idc.next_head(task_func_cur)
+        task_opcode = ida_ua.ua_mnem(task_func_cur)
+
         # bailout
         if (task_func_cur >= task_func_end):
+            idc.msg("[e] find_task_desc_tbl_pixel: end reached %x\n" % (task_func_cur))
             return -1
 
+        if (task_opcode == None):
+            continue
+
+        if ("BL" in task_opcode):
+
+            task_func_cur = idc.next_head(task_func_cur)
+            task_opcode = ida_ua.ua_mnem(task_func_cur)
+
+            if ("MOV" in task_opcode):
+
+                target_ref = idc.get_first_dref_from(task_func_cur)
+
+                if (target_ref != idaapi.BADADDR and target_ref != 0x0):
+
+                    struct_id = idc.get_struc_id("task_struct")
+                    
+                    target_ref = target_ref + 0x27
+
+                    # could be differently aligned to avoid the +27 above but
+                    # here it is ok to be lazy
+                    shannon_structs.add_struc_member(
+                        struct_id, "padding_2", -1, idaapi.FF_BYTE, -1, 0xbf)
+
+                    idc.msg("[i] pal_TaskDescTbl: %x\n" % (target_ref))
+
+                    return identify_task_init(target_ref)
+
+            else:
+                
+                return -1
 
 # step 6 - find the second LDR in the function. It is the TaskDescTbl
 def find_task_desc_tbl(task_func_start, task_func_end):
@@ -252,6 +318,10 @@ def find_task_desc_tbl(task_func_start, task_func_end):
         task_func_cur = idc.next_head(task_func_cur)
         task_opcode = ida_ua.ua_mnem(task_func_cur)
 
+        # bailout
+        if (task_func_cur >= task_func_end):
+            return -1
+
         # skip text chunks inside function
         if (task_opcode == None):
             #shannon_generic.DEBUG("[d] error finding pal_TaskDescTbl() at %x\n" % task_func_cur)
@@ -263,6 +333,16 @@ def find_task_desc_tbl(task_func_start, task_func_end):
                 target_ref = idc.get_operand_value(task_func_cur, 1)
                 tbl_offset = int.from_bytes(
                     ida_bytes.get_bytes(target_ref, 4), "little")
+
+                seg_start = idc.get_segm_start(task_func_cur)
+
+                shannon_generic.DEBUG(
+                    "[d] find_task_desc_tbl: found table at %x but segment start is %x\n" % (tbl_offset, seg_start))
+
+                # sanity check to limit false positives, especially with pixel modems
+                if (tbl_offset < seg_start):
+                    return find_task_desc_tbl_pixel(task_func_start, task_func_end)
+
                 ida_name.set_name(
                     tbl_offset, "pal_TaskDescTbl", ida_name.SN_NOCHECK)
 
@@ -286,13 +366,9 @@ def find_task_desc_tbl(task_func_start, task_func_end):
                     return tasks
 
                 else:
-                    find_task_desc_tbl_new(task_func_start, task_func_end)
+                    return find_task_desc_tbl_5g(task_func_start, task_func_end)
 
             ldr_cnt += 1
-
-        # bailout
-        if (task_func_cur >= task_func_end):
-            return -1
 
 
 def identify_task_init(tbl_offset):
@@ -302,7 +378,7 @@ def identify_task_init(tbl_offset):
 
     struct_id = idc.get_struc_id("task_struct")
     struct_size = idc.get_struc_size(struct_id)
-    
+
     sptr = shannon_structs.get_struct(struct_id)
     str_ptr = shannon_structs.get_offset_by_name(sptr, "task_name")
     entry_ptr = shannon_structs.get_offset_by_name(sptr, "task_entry")
@@ -340,11 +416,16 @@ def identify_task_init(tbl_offset):
         if (task_entry_func_start != idaapi.BADADDR):
             shannon_funcs.function_find_boundaries(task_entry_func_start)
 
-        idc.msg("[i] found task init for %s at %x\n" %
-                (str(task_name_str.decode()), entry_offset))
+        if (task_name_str):
 
-        ida_name.set_name(entry_offset, "pal_TaskInit_" + str(
-            task_name_str.decode()), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
+            idc.msg("[i] found task init for %s at %x\n" %
+                    (str(task_name_str.decode()), entry_offset))
+
+            ida_name.set_name(entry_offset, "pal_TaskInit_" + str(
+                task_name_str.decode()), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
+        else:
+
+            idc.msg("[e] %x: corrupt task struct\n" % entry_offset)
 
         tbl_offset += struct_size
 
