@@ -73,8 +73,7 @@ def find_struct_start(tbl_offset, margin):
 
     if (not task_name_str or len(task_name_str) < 2):
         margin += 1
-        shannon_generic.DEBUG("[d] testing margin of %x (str: %s len: %d) \n" %
-                              (margin, str(task_name_str.decode()), len(task_name_str)))
+
         tbl_offset = find_struct_start(tbl_offset, margin)
         return tbl_offset
 
