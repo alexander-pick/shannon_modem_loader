@@ -191,6 +191,6 @@ def restore_ss_names():
 
 
 #for debugging purpose export SHANNON_WORKFLOW="NO"
-if os.environ.get('SHANNON_WORKFLOW') == "NO":
+if (os.environ.get('SHANNON_WORKFLOW') == "NO"):
     idc.msg("[i] running names in standalone mode")
 

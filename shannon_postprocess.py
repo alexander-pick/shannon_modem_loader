@@ -31,6 +31,8 @@ import shannon_scatterload
 import shannon_debug_traces
 import shannon_names
 
+post_processed = False
+
 # identify the non returning function which belongs to the stack protection, if it exists
 # we deal with a very new BB - like 5G new.
 def find_cookie_monster():
@@ -145,7 +147,7 @@ def find_rvct():
                         for function_ea in idautils.Functions():
                             #check that the function has no name yet
                             if("sub_" in ida_funcs.get_func_name(function_ea)):
-                                #idc.msg("[d] %x\n" % function_ea)
+                                #shannon_generic.DEBUG("[d] %x\n" % function_ea)
                                 func_cnt += 1
                                 idaapi.apply_idasgn_to(sig_file, function_ea, 0)
                         
@@ -163,6 +165,13 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
     # ida's standard post processing callback
     def auto_empty_finally(self):
+        
+        global post_processed
+        
+        # avoid this to be triggered twice
+        if(post_processed): 
+            return
+        post_processed = True
 
         # start calculating runtime
         start_time = time.process_time()

@@ -26,11 +26,11 @@ def process_scatterload(reset_func_cur):
 
     scatterload = idc.get_operand_value(scatter_target, 0)
 
-    idc.msg("[i] scatterload(): %x\n" % (scatterload))
+    if ((not scatterload) or (scatterload < 0xFFFF)):
+        idc.msg("[e] scatter table not found\n")
+        return None
 
-    if (scatterload == None):
-        idc.msg("[e] scatterload == None\n")
-        return
+    idc.msg("[i] scatterload(): %x\n" % (scatterload))
 
     ida_name.set_name(scatterload, "scatterload", ida_name.SN_NOCHECK)
 
@@ -245,11 +245,12 @@ def process_scattertbl(scatter_start, scatter_size, ops):
                             shannon_generic.add_memory_segment(entry[1], entry[2],
                                                                "SCATTER_" + str(scatter_id),
                                                                "CODE", False)
-                            
-                            shannon_generic.DEBUG("[d] src: %x cnt: %d dst: %x " % (entry[0], entry[2], entry[1]))
+
+                            shannon_generic.DEBUG("[d] src: %x cnt: %d dst: %x " %
+                                                  (entry[0], entry[2], entry[1]))
 
                             chunk = ida_bytes.get_bytes(entry[0], entry[2])
-                            
+
                             shannon_generic.DEBUG("len: %s\n" % (len(chunk)))
 
                             ida_bytes.put_bytes(entry[1], chunk)
@@ -279,7 +280,7 @@ def read_scattertbl(scatter_start, scatter_size):
     tbl = []
 
     scatter_offset = scatter_start
-    
+
     sptr = shannon_structs.get_struct(struct_id)
     src_ptr = shannon_structs.get_offset_by_name(sptr, "src")
     dst_ptr = shannon_structs.get_offset_by_name(sptr, "dst")
@@ -291,13 +292,13 @@ def read_scattertbl(scatter_start, scatter_size):
         entry = []
 
         ida_bytes.del_items(scatter_offset, 0, struct_size)
-        ida_bytes.create_struct(scatter_offset, struct_size, struct_id)        
+        ida_bytes.create_struct(scatter_offset, struct_size, struct_id)
 
         entry.append(int.from_bytes(ida_bytes.get_bytes(
             (scatter_offset + src_ptr), 4), "little"))
-        
+
         entry.append(int.from_bytes(ida_bytes.get_bytes(
-            (scatter_offset + dst_ptr), 4), "little"))        
+            (scatter_offset + dst_ptr), 4), "little"))
 
         entry.append(int.from_bytes(ida_bytes.get_bytes(
             (scatter_offset + size_ptr), 4), "little"))
@@ -368,7 +369,8 @@ def find_scatter():
                             # scatterload is the first branch in main, right after the crt (reset vector)
                             if ("B" == reset_opcode):
 
-                                shannon_generic.DEBUG("[d] scatter candidate at %x\n" % reset_func_cur)
+                                shannon_generic.DEBUG(
+                                    "[d] scatter candidate at %x\n" % reset_func_cur)
 
                                 # it's all about beeing flexible ...
                                 b_target = idc.get_operand_value(reset_func_cur, 0)
@@ -379,12 +381,16 @@ def find_scatter():
                                     return
 
                                 if ("B" == next_opcode):
-                                    shannon_generic.DEBUG("[d] additional jump at %x\n" % b_target)
+                                    shannon_generic.DEBUG(
+                                        "[d] additional jump at %x\n" % b_target)
                                     # new BB jump twice, so we check that here and follow the white rabbit
                                     reset_func_cur = b_target
 
                                 scatterload = process_scatterload(reset_func_cur)
-                                create_scatter_tbl(scatterload)
+
+                                if (scatterload):
+                                    create_scatter_tbl(scatterload)
+
                                 return
 
                             # abort if nothing was found
@@ -504,6 +510,6 @@ def scatterload_decompress(src, cnt):
 
 
 # for debugging purpose export SHANNON_WORKFLOW="NO"
-if os.environ.get('SHANNON_WORKFLOW') == "NO":
+if (os.environ.get('SHANNON_WORKFLOW') == "NO"):
     idc.msg("[i] running scatter load in standalone mode")
     find_scatter()

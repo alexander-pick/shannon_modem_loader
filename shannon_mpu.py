@@ -482,7 +482,7 @@ def process_mpu_table(tbl_candidates):
             # Shannon mpu table is never amazingly big
             max_entries = 0x20
             entries = 0
-            
+
             num_ptr = shannon_structs.get_offset_by_name(tif, "num")
             addr_ptr = shannon_structs.get_offset_by_name(tif, "addr")
             size_ptr = shannon_structs.get_offset_by_name(tif, "size")
@@ -525,7 +525,7 @@ def process_mpu_table(tbl_candidates):
 
 
 #for debugging purpose export SHANNON_WORKFLOW="NO"
-if os.environ.get('SHANNON_WORKFLOW') == "NO":
+if (os.environ.get('SHANNON_WORKFLOW') == "NO"):
     idc.msg("[i] running mpu in standalone mode\n")
     find_hw_init()
     scan_for_mrc()

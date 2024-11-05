@@ -28,6 +28,7 @@ import shannon_generic
 # The head contains a type byte in position 4, this indicates if a structure is a direct
 # string ref or something else.
 def make_dbt():
+    
     sc = idautils.Strings()
 
     sc.setup(strtypes=[ida_nalt.STRTYPE_C],
@@ -175,9 +176,9 @@ def load_file(fd, neflags, format):
 
             idaapi.set_processor_type("arm:ARMv8", ida_idp.SETPROC_LOADER_NON_FATAL)
             idc.process_config_line("ARM_DEFAULT_ARCHITECTURE = ARMv8")
-            
+
             # limit for performance reasons
-            idc.process_config_line("ARM_REGTRACK_MAX_XREFS = 512")
+            #idc.process_config_line("ARM_REGTRACK_MAX_XREFS = 512")
 
             tensor = True
 

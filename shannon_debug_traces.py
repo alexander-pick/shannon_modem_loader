@@ -60,6 +60,6 @@ def make_dbt_refs():
                             func_start, file_str.decode(), 1)
 
 #for debugging purpose export SHANNON_WORKFLOW="NO"
-if os.environ.get('SHANNON_WORKFLOW') == "NO":
+if (os.environ.get('SHANNON_WORKFLOW') == "NO"):
     idc.msg("[i] running debug traces in standalone mode")
     make_dbt_refs()
