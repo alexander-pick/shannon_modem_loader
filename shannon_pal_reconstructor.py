@@ -59,7 +59,8 @@ def find_struct_start(tbl_offset, margin):
     ida_bytes.create_struct(tbl_offset, struct_size, struct_id)
 
     str_offset = int.from_bytes(ida_bytes.get_bytes((tbl_offset + str_ptr), 4), "little")
-
+        
+    ida_bytes.del_items(str_offset, 0, 3)
     ida_bytes.create_strlit(str_offset, 0, ida_nalt.STRTYPE_C)
 
     task_name_str = idc.get_strlit_contents(str_offset)
@@ -70,7 +71,7 @@ def find_struct_start(tbl_offset, margin):
     if (margin > 0xFF):
         return None
 
-    if (not task_name_str or len(task_name_str) < 5):
+    if (not task_name_str or len(task_name_str) < 2):
         margin += 1
         shannon_generic.DEBUG("[d] testing margin of %x (str: %s len: %d) \n" %
                               (margin, str(task_name_str.decode()), len(task_name_str)))
@@ -446,7 +447,8 @@ def identify_task_init(tbl_offset, padding):
 
         str_offset = int.from_bytes(ida_bytes.get_bytes(
             (tbl_offset + str_ptr), 4), "little")
-
+    
+        ida_bytes.del_items(str_offset, 0, 3)
         ida_bytes.create_strlit(str_offset, 0, ida_nalt.STRTYPE_C)
 
         task_name_str = idc.get_strlit_contents(str_offset)
@@ -460,7 +462,8 @@ def identify_task_init(tbl_offset, padding):
             break
 
         # make sure we don't have many false positives here
-        if (task_name_str and len(task_name_str) > 3 and entry_offset > 0xFFFF):
+        # Shortest name I found for a task was MM so far
+        if (task_name_str and len(task_name_str) >= 2 and entry_offset > 0xFFFF):
             
             task_entries.append([task_name_str, entry_offset])
             
@@ -508,6 +511,8 @@ def identify_task_init(tbl_offset, padding):
             idc.msg("[i] found task init for %s at %x\n" % (str(task[0].decode()), task[1]))
 
             ida_name.set_name(task[1], "pal_TaskInit_" + str(task[0].decode()), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
+        
+        idc.msg("[i] %d tasks found\n" % (len(task_entries)))
         
         # list of tasks is consumed, return empty to avoid multi procession in recurse
         return []
