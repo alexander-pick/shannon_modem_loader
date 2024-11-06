@@ -47,6 +47,7 @@ def find_struct_start(tbl_offset, margin):
 
     # create struct, check string etc.
 
+    tbl_offset_orig = tbl_offset
     tbl_offset += margin
 
     struct_id = idc.get_struc_id("task_struct")
@@ -59,11 +60,14 @@ def find_struct_start(tbl_offset, margin):
     ida_bytes.create_struct(tbl_offset, struct_size, struct_id)
 
     str_offset = int.from_bytes(ida_bytes.get_bytes((tbl_offset + str_ptr), 4), "little")
-        
-    ida_bytes.del_items(str_offset, 0, 3)
+
+    ida_bytes.del_items(str_offset, 0, 2)
     ida_bytes.create_strlit(str_offset, 0, ida_nalt.STRTYPE_C)
 
     task_name_str = idc.get_strlit_contents(str_offset)
+
+    shannon_generic.DEBUG("[d] testing margin of 0x%x -> 0x%x (str %s, str_off: 0x%x)\n" %
+                          (margin, tbl_offset, str(task_name_str), str_offset))
 
     #clean up
     ida_bytes.del_items(tbl_offset, 0, struct_size)
@@ -74,10 +78,11 @@ def find_struct_start(tbl_offset, margin):
     if (not task_name_str or len(task_name_str) < 2):
         margin += 1
 
-        tbl_offset = find_struct_start(tbl_offset, margin)
+        tbl_offset = find_struct_start(tbl_offset_orig, margin)
         return tbl_offset
 
-    idc.msg("[i] found real table start at %x , first tasks is %s\n" % (tbl_offset, str(task_name_str.decode())))
+    idc.msg("[i] found real table start at %x , first tasks is %s\n" %
+            (tbl_offset, str(task_name_str.decode())))
 
     return tbl_offset
 
@@ -435,7 +440,7 @@ def identify_task_init(tbl_offset, padding):
     sptr = shannon_structs.get_struct(struct_id)
     str_ptr = shannon_structs.get_offset_by_name(sptr, "task_name")
     entry_ptr = shannon_structs.get_offset_by_name(sptr, "task_entry")
-    
+
     task_entries = []
 
     while (tasks < MAX_TASKS):
@@ -446,7 +451,7 @@ def identify_task_init(tbl_offset, padding):
 
         str_offset = int.from_bytes(ida_bytes.get_bytes(
             (tbl_offset + str_ptr), 4), "little")
-    
+
         ida_bytes.del_items(str_offset, 0, 3)
         ida_bytes.create_strlit(str_offset, 0, ida_nalt.STRTYPE_C)
 
@@ -463,9 +468,9 @@ def identify_task_init(tbl_offset, padding):
         # make sure we don't have many false positives here
         # Shortest name I found for a task was MM so far
         if (task_name_str and len(task_name_str) >= 2 and entry_offset > 0xFFFF):
-            
+
             task_entries.append([task_name_str, entry_offset])
-            
+
         else:
 
             shannon_generic.DEBUG("[d] %x: corrupt task struct\n" % entry_offset)
@@ -492,7 +497,7 @@ def identify_task_init(tbl_offset, padding):
 
     if (len(task_entries) > threshold):
         for task in task_entries:
-            
+
             if (not idc.is_code(idc.get_full_flags(entry_offset))):
                 ida_ua.create_insn(entry_offset)
 
@@ -506,13 +511,14 @@ def identify_task_init(tbl_offset, padding):
 
             if (task_entry_func_start != idaapi.BADADDR):
                 shannon_funcs.function_find_boundaries(task_entry_func_start)
-    
+
             idc.msg("[i] found task init for %s at %x\n" % (str(task[0].decode()), task[1]))
 
-            ida_name.set_name(task[1], "pal_TaskInit_" + str(task[0].decode()), ida_name.SN_NOCHECK | ida_name.SN_FORCE)
-        
+            ida_name.set_name(task[1], "pal_TaskInit_" + str(task[0].decode()),
+                              ida_name.SN_NOCHECK | ida_name.SN_FORCE)
+
         idc.msg("[i] %d tasks found\n" % (len(task_entries)))
-        
+
         # list of tasks is consumed, return empty to avoid multi procession in recurse
         return []
 
