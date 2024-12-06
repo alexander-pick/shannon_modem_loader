@@ -168,7 +168,7 @@ def load_file(fd, neflags, format):
         if (seg_name == "OFFSET" and seg_start == 0x0):
 
             idc.msg("[i] found OFFSET, skipping\n")
-            break
+            continue
 
         if (seg_name == "GVERSION" and seg_start == 0x0):
 
@@ -182,7 +182,7 @@ def load_file(fd, neflags, format):
 
             tensor = True
 
-            break
+            continue
 
         # map slices to segments
         idc.msg("[i] adding %s\n" % seg_name)
