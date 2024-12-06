@@ -486,7 +486,8 @@ def process_mpu_table(tbl_candidates):
             num_ptr = shannon_structs.get_offset_by_name(tif, "num")
             addr_ptr = shannon_structs.get_offset_by_name(tif, "addr")
             size_ptr = shannon_structs.get_offset_by_name(tif, "size")
-            xn_ptr = shannon_structs.get_offset_by_name(tif, "size")
+            ap_ptr = shannon_structs.get_offset_by_name(tif, "ap")
+            xn_ptr = shannon_structs.get_offset_by_name(tif, "xn")
 
             while (1):
 
@@ -509,15 +510,32 @@ def process_mpu_table(tbl_candidates):
                     return False
 
                 xn = int.from_bytes(ida_bytes.get_bytes((mpu_tbl + xn_ptr), 4), "little")
+                ap = int.from_bytes(ida_bytes.get_bytes((mpu_tbl + xn_ptr), 4), "little")
+                
+                read    = True
+                write   = True
+                exec    = True
+                
+                if(ap == 0):
+                    read = False    # Read/write by privileged code only.
+                    write = False
+                
+                if(ap == 0b10):
+                    read = False    # Read only by privileged code only
+                    write = False
+
+                if(ap == 0b11):
+                    write = False   # Read only by any privilege level
 
                 seg_type = "CODE"
 
-                if (xn > 0):
+                if (xn > 0):        # eXecute Never attribute
                     seg_type = "DATA"
+                    exec = False
 
                 shannon_generic.add_memory_segment(
-                    addr, size, "MPU_" + str(num), seg_type, 0)
-
+                    addr, size, "MPU_" + str(num), seg_type, 0, read, write, exec)
+                
                 mpu_tbl += struct_size
                 entries += 1
 

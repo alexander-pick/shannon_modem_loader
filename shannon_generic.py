@@ -25,7 +25,7 @@ def DEBUG(msg):
         idc.msg(msg)
 
 # adds a memory segment to the database
-def add_memory_segment(seg_start, seg_size, seg_name, seg_type="DATA", sparse=True):
+def add_memory_segment(seg_start, seg_size, seg_name, seg_type="DATA", sparse=True, seg_read=True, seg_write=True, seg_exec=True):
 
     # sanity check
     if (seg_size < 0):
@@ -43,15 +43,28 @@ def add_memory_segment(seg_start, seg_size, seg_name, seg_type="DATA", sparse=Tr
                     idaapi.scPub, ida_segment.ADDSEG_SPARSE)
 
     idc.set_segm_class(seg_start, seg_type)
+    
+    
+    seg_read_perm   = ida_segment.SEGPERM_READ
+    seg_write_perm  = ida_segment.SEGPERM_WRITE
+    seg_exec_perm   = ida_segment.SEGPERM_EXEC
+    
+    if(not seg_read):
+        seg_read_perm = 0
+        
+    if(not seg_write):
+        seg_write_perm = 0
+        
+    if(not seg_exec):
+        seg_exec_perm = 0
+        
 
     if (seg_type == "CODE"):
         idc.set_segm_type(seg_start, idaapi.SEG_CODE)
-        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, ida_segment.SEGPERM_EXEC |
-                          ida_segment.SEGPERM_READ | ida_segment.SEGPERM_WRITE)
+        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, seg_exec_perm | seg_read_perm | seg_write_perm)
     else:
         idc.set_segm_type(seg_start, idaapi.SEG_DATA)
-        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM,
-                          ida_segment.SEGPERM_WRITE | ida_segment.SEGPERM_READ)
+        idc.set_segm_attr(seg_start, idc.SEGATTR_PERM, seg_read_perm | seg_write_perm)
 
     idc.set_segm_name(seg_start, seg_name)
 
