@@ -166,8 +166,9 @@ def load_file(fd, neflags, format):
 
         # these seem to be present mostly in older images
         if (seg_name == "OFFSET" and seg_start == 0x0):
-
+            
             idc.msg("[i] found OFFSET, skipping\n")
+            start_offset += 0x20
             continue
 
         if (seg_name == "GVERSION" and seg_start == 0x0):
@@ -181,6 +182,7 @@ def load_file(fd, neflags, format):
             #idc.process_config_line("ARM_REGTRACK_MAX_XREFS = 512")
 
             tensor = True
+            start_offset += 0x20
 
             continue
 
