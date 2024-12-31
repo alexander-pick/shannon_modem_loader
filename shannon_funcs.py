@@ -2,7 +2,7 @@
 
 # Samsung Shannon Modem Loader - Function Related Functions
 # A lean IDA Pro loader for fancy baseband research
-# Alexander Pick 2024
+# Alexander Pick 2024-2025
 
 import idc
 import idaapi

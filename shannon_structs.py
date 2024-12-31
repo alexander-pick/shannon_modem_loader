@@ -2,7 +2,7 @@
 
 # Samsung Shannon Modem Loader - Structs
 # A lean IDA Pro loader for fancy baseband research
-# Alexander Pick 2024
+# Alexander Pick 2024-2025
 
 import idaapi
 import ida_nalt

@@ -2,7 +2,7 @@
 
 # Samsung Shannon Modem Loader - Debug Traces
 # This script is autoamtically scheduled by the loader
-# Alexander Pick 2024
+# Alexander Pick 2024-2025
 
 import idc
 import ida_bytes

@@ -2,7 +2,7 @@
 
 # Samsung Shannon Modem Loader - Postprocessor
 # This script is autoamtically scheduled by the loader
-# Alexander Pick 2024
+# Alexander Pick 2024-2025
 
 import idc
 import idaapi
@@ -30,6 +30,7 @@ import shannon_mpu
 import shannon_scatterload
 import shannon_debug_traces
 import shannon_names
+import shannon_indirect_xref
 
 post_processed = False
 
@@ -184,7 +185,9 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         shannon_names.restore_cpp_names()
         shannon_generic.create_long_strings()
 
-        find_cookie_monster()
+        if(find_cookie_monster()):
+            # this is a thing for newer baseband versions
+            shannon_indirect_xref.scan_main_indirect_refs()
 
         for s in idautils.Segments():
 

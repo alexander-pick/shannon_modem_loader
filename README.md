@@ -4,7 +4,7 @@ This is a simple firmware loader plugin to load Samsung Exynos "Shannon" modem i
 
 The loader should work with most Samsung Exynos modem images containing a TOC header including crash dumps. Compatible images can be found e.g. in updates for Exynos based phones. The typical file name is `modem.bin`. Sometimes the images are compressed using lz4. Uncompress them before loading, using lz4 utility present on most Linux distros. 
 
-The loader was tested with a larger set of images from ancient (e.g. G8700, S7) to new (e.g. S22, S24). Loading 2024 build images works fine including task identification.
+The loader was tested with a larger set of images from ancient (e.g. G8700, S7) to new (e.g. S22, S24). Loading recently build images works fine including task identification.
 
 # How To Use This Loader
 

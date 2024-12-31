@@ -2,7 +2,7 @@
 
 # Samsung Shannon Modem Loader - MPU Processor
 # This script is automatically executed by the loader
-# Alexander Pick 2024
+# Alexander Pick 2024-2025
 
 import idc
 import idaapi

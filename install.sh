@@ -2,16 +2,16 @@
 
 # Samsung Shannon Modem Loader, Installer Script
 # A lean IDA Pro loader for fancy baseband research
-# Alexander Pick 2024
+# Alexander Pick 2024-2025
 
-declare -a IDADIRA=("ida-home-arm-9.0" "idaarm-8.4" "idaarm-8.3" "ida-pro-9.0" "idapro-8.4" "idapro-8.3")
-declare -a IDABINA=("ida" "ida64" "ida64" "ida64" "ida" "ida")
+declare -a IDADIRA=("ida-pro-9.0" "ida-home-arm-9.0" "idaarm-8.4" "idaarm-8.3" "idapro-8.4" "idapro-8.3")
+declare -a IDABINA=("ida" "ida" "ida64" "ida64" "ida64" "ida")
 
 echo -e ""
 echo "░▀█▀░█▀▄░█▀█░░░█▀▀░█▀▀░█▄█░█░░░░░▀█▀░█▀█░█▀▀░▀█▀░█▀█░█░░░█░░░█▀▀░█▀▄"
 echo "░░█░░█░█░█▀█░░░▀▀█░▀▀█░█░█░█░░░░░░█░░█░█░▀▀█░░█░░█▀█░█░░░█░░░█▀▀░█▀▄"
 echo "░▀▀▀░▀▀░░▀░▀░░░▀▀▀░▀▀▀░▀░▀░▀▀▀░░░▀▀▀░▀░▀░▀▀▀░░▀░░▀░▀░▀▀▀░▀▀▀░▀▀▀░▀░▀"
-echo -e "Install Samsung Shannon Modem Loader, 2024 by Alexander Pick"
+echo -e "Install Samsung Shannon Modem Loader, 2024-2025 by Alexander Pick"
 echo -e "https://github.com/alexander-pick/shannon_modem_loader\n"
 
 function help() {
@@ -35,6 +35,7 @@ function install() {
     cp -v shannon_names.py ${IDADIR}/python/
     cp -v shannon_debug_traces.py ${IDADIR}/python/
     cp -v shannon_funcs.py ${IDADIR}/python/
+    cp -v shannon_indirect_xref.py ${IDADIR}/python/
 
     cp -v sig/*.sig ${IDADIR}/sig/arm/
 }

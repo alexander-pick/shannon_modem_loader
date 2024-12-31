@@ -2,7 +2,7 @@
 
 # Samsung Shannon Modem Loader - PAL Reconstructor
 # This script is autoamtically executed by the loader
-# Alexander Pick 2024
+# Alexander Pick 2024-2025
 
 import idc
 import idaapi
