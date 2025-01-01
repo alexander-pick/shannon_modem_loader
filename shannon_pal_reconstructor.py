@@ -141,6 +141,8 @@ def find_pal_msg_funcs():
                                   ida_name.SN_NOCHECK | ida_name.SN_FORCE)
 
         find_pal_msg_init(pal_MsgSendTo_addr)
+    
+    return
 
 
 # try to find pal_MsgInit() and a few others along
@@ -202,6 +204,8 @@ def find_pal_msg_init(pal_MsgSendTo_addr):
                 break
 
             func_cnt += 1
+            
+    return
 
 # try to find Task SCheduler, Task Inits and pal_Init()
 def find_pal_init():

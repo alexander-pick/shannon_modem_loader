@@ -170,9 +170,14 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
         global post_processed
         
         # avoid this to be triggered twice
-        if(post_processed): 
+        if(post_processed is True): 
             return
-        post_processed = True
+        else:
+            post_processed = True
+        
+        # avoid multiple execution paths if a segment get split due to scatter etc.
+        boot_processed_once = False
+        main_processed_once = False
 
         # start calculating runtime
         start_time = time.process_time()
@@ -196,40 +201,48 @@ class idb_finalize_hooks_t(ida_idp.IDB_Hooks):
 
             # add some names
             if (seg_name == "BOOT_file"):
+    
+                if(boot_processed_once is False):
+                    
+                    boot_processed_once = True
 
-                shannon_generic.get_ref_set_name(seg_start, "start")
+                    shannon_generic.get_ref_set_name(seg_start, "start")
 
             if (seg_name == "MAIN_file"):
+                
+                if(main_processed_once is False):
+                    
+                    main_processed_once = True
 
-                shannon_generic.get_ref_set_name(seg_start, "reset_v")
+                    shannon_generic.get_ref_set_name(seg_start, "reset_v")
 
-                shannon_generic.get_ref_set_name(seg_start + 4, "undef_inst_v")
+                    shannon_generic.get_ref_set_name(seg_start + 4, "undef_inst_v")
 
-                shannon_generic.get_ref_set_name(seg_start + 8, "soft_int_v")
+                    shannon_generic.get_ref_set_name(seg_start + 8, "soft_int_v")
 
-                shannon_generic.get_ref_set_name(seg_start + 12, "prefetch_abort_v")
+                    shannon_generic.get_ref_set_name(seg_start + 12, "prefetch_abort_v")
 
-                shannon_generic.get_ref_set_name(seg_start + 16, "data_abort_v")
+                    shannon_generic.get_ref_set_name(seg_start + 16, "data_abort_v")
 
-                shannon_generic.get_ref_set_name(seg_start + 20, "reserved_v")
+                    shannon_generic.get_ref_set_name(seg_start + 20, "reserved_v")
 
-                shannon_generic.get_ref_set_name(seg_start + 24, "irq_v")
+                    shannon_generic.get_ref_set_name(seg_start + 24, "irq_v")
 
-                shannon_generic.get_ref_set_name(seg_start + 28, "fiq_v")
+                    shannon_generic.get_ref_set_name(seg_start + 28, "fiq_v")
 
-                self.memory_ranges()
+                    self.memory_ranges()
 
-                # it is very important to do this in the correct order
-                # especially for new modems or the result will be left
-                # in a weird state
+                    # it is very important to do this in the correct order
+                    # especially for new modems or the result will be left
+                    # in a weird state
 
-                shannon_mpu.find_hw_init()
-                shannon_mpu.scan_for_mrc()
+                    shannon_mpu.find_hw_init()
+                    shannon_mpu.scan_for_mrc()
 
-                shannon_scatterload.find_scatter()
+                    shannon_scatterload.find_scatter()
 
-                shannon_pal_reconstructor.find_pal_msg_funcs()
-                shannon_pal_reconstructor.find_pal_init()
+                    shannon_pal_reconstructor.find_pal_msg_funcs()
+                    shannon_pal_reconstructor.find_pal_init()
 
         find_rvct()
 
