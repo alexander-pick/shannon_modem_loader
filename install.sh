@@ -4,8 +4,8 @@
 # A lean IDA Pro loader for fancy baseband research
 # Alexander Pick 2024-2025
 
-declare -a IDADIRA=("ida-pro-9.0" "ida-home-arm-9.0" "idaarm-8.4" "idaarm-8.3" "idapro-8.4" "idapro-8.3")
-declare -a IDABINA=("ida" "ida" "ida64" "ida64" "ida64" "ida")
+declare -a IDADIRA=("ida-essential-9.0" "ida-pro-9.0" "ida-home-arm-9.0" "idaarm-8.4" "idaarm-8.3" "idapro-8.4" "idapro-8.3")
+declare -a IDABINA=("ida" "ida" "ida" "ida64" "ida64" "ida64" "ida")
 
 echo -e ""
 echo "░▀█▀░█▀▄░█▀█░░░█▀▀░█▀▀░█▄█░█░░░░░▀█▀░█▀█░█▀▀░▀█▀░█▀█░█░░░█░░░█▀▀░█▀▄"

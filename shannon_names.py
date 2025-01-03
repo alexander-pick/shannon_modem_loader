@@ -188,7 +188,7 @@ def restore_ss_names():
                                 prev_offset, idc.prev_head(str_addr))
                             idaapi.set_name(
                                 prev_offset, shannon_funcs.function_find_name(func_name_str))
-
+                            break
 
 #for debugging purpose export SHANNON_WORKFLOW="NO"
 if (os.environ.get('SHANNON_WORKFLOW') == "NO"):
