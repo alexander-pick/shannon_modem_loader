@@ -131,6 +131,11 @@ def load_file(fd, neflags, format):
     # make sure the idb is seen as 32 bit even if opened in ida64
     idaapi.inf_set_app_bitness(32)
 
+    # force disble autoanalysis for avoid crashes
+    if ida_auto.is_auto_enabled():
+        ida_auto.auto_wait()
+
+
     # this is needed to clear the output window
     output = ida_kernwin.find_widget("Output window")
     ida_kernwin.activate_widget(output, True)
@@ -257,6 +262,8 @@ def load_file(fd, neflags, format):
                               ida_segment.SEGPERM_READ | ida_segment.SEGPERM_WRITE)
 
         start_offset += 0x20
+
+    idc.msg("[i] Loader completed successfully.\n")
 
     # let's do that before creating any code (avoids false positives in AA)
     shannon_generic.create_long_strings()

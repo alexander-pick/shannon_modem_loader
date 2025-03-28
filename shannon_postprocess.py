@@ -23,6 +23,8 @@ import time
 import os
 import pwd
 import glob
+import threading
+import time
 
 import shannon_pal_reconstructor
 import shannon_generic
@@ -340,6 +342,36 @@ idb_hooks = idb_finalize_hooks_t()
 idb_hooks.hook()
 idc.msg("[i] Shannon postprocessor scheduled.\n")
 
-#show a "please wait .." box
-if (not shannon_generic.is_debug):
+## ADDED BY ENOKSETH FOR AVOIDING WAIT BOXES AND CRASH 
+
+# Affiche la fenêtre "please wait..." uniquement si le mode debug n'est pas activé
+if not shannon_generic.is_debug:
     idaapi.show_wait_box('HIDECANCEL\nPost-processing modem image, please wait...')
+
+# Cette fonction essaie de cacher la wait box en toute sécurité
+def safe_hide_wait_box():
+    try:
+        idaapi.hide_wait_box()
+        idc.msg("[✓] Wait box closed successfully.\n")
+    except Exception as e:
+        idc.msg(f"[!] Error closing wait box: {e}\n")
+
+# Hook secondaire au cas où le post-processing ne la ferme pas
+class WaitBoxManager(ida_idp.IDB_Hooks):
+    def auto_empty_finally(self):
+        if not shannon_generic.is_debug:
+            safe_hide_wait_box()
+
+# Remplace les deux hooks par un seul
+waitbox_hook = WaitBoxManager()
+waitbox_hook.hook()
+
+
+# Optionnel : ajoute une sécurité supplémentaire avec timeout automatique
+
+def force_hide_after_timeout(timeout=120):
+    time.sleep(timeout)
+    idc.msg("[!] Timeout reached, forcing wait box close.\n")
+    safe_hide_wait_box()
+
+threading.Thread(target=force_hide_after_timeout, daemon=True).start()

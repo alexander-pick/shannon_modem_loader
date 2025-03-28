@@ -10,7 +10,7 @@ import ida_nalt
 import idautils
 import idaapi
 import ida_segment
-#import ida_search
+import ida_search
 import ida_ua
 import ida_funcs
 

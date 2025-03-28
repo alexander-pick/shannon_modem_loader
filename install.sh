@@ -25,6 +25,11 @@ function help() {
 }
 
 function install() {
+    echo "[i] Cleaning old Shannon plugin files..."
+    rm -f ${IDADIR}/python/shannon_*.py
+    rm -f ${IDADIR}/loaders/shannon_load.py
+
+    echo "[i] Installing updated files..."
     cp -v shannon_load.py ${IDADIR}/loaders/
     cp -v shannon_postprocess.py ${IDADIR}/python/
     cp -v shannon_pal_reconstructor.py ${IDADIR}/python/
@@ -39,6 +44,7 @@ function install() {
 
     cp -v sig/*.sig ${IDADIR}/sig/arm/
 }
+
 
 function findIDA() {
     if [ -z ${IDADIR} ]; then 
